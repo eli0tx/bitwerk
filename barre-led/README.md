@@ -50,8 +50,10 @@ Z = 0 sur la face contre le dos des panneaux.
 - **Vissée** dans ses taraudages M4 latéraux (plan Mean Well : 2 par grand côté, à 32,5 mm de chaque bout,
   12,5 mm du dessous, vis ≤ 5 mm dans le boîtier) : 4 vis **M4 × 8 + rondelle**
   (ou M4 × 6 sans rondelle). Trous oblongs ±1,5 mm pour rattraper l'entraxe des éclisses.
-- Chaque berceau : deux joues vissées, le prolongement des nervures sous le boîtier et deux entretoises.
-  Les joues montent jusqu'au mur et servent de pieds d'écartement.
+- Chaque berceau est réduit au strict nécessaire : un cadre bas de 8 mm (2 longerons + 2 traverses)
+  et, de chaque côté, un pilier de 15,5 mm de large qui reçoit la vis M4, monte jusqu'au mur
+  (pied d'écartement) et est contreventé par un gousset à 45°. Le boîtier ne repose sur rien,
+  il est tenu par ses 4 vis.
 - **Sécurité** : le bornier reçoit le 230 V. Câbler avant de poser la barre, serrer la terre,
   sélecteur d'entrée sur 230 V.
 
@@ -59,8 +61,8 @@ Z = 0 sur la face contre le dos des panneaux.
 
 - `ecart_mur` = 15 + 30 + 4 mm d'air = **49 mm** entre le dos des panneaux et le mur.
 - Éclisse X = −320 : pied à trou de serrure en haut + colonne creuse Ø 12 en bas.
-- Éclisse X = +320 : pied à trou de serrure ; les joues du berceau font l'appui.
-- Éclisse Pi : pas de pied, ses joues de berceau s'appuient contre le mur.
+- Éclisse X = +320 : pied à trou de serrure ; les piliers du berceau font l'appui.
+- Éclisse Pi : pas de pied, les piliers de son berceau s'appuient contre le mur.
 - Trous de serrure : Ø 10 pour la tête, fente 4,5 mm vers le haut. Vis murales Ø 4 à tête Ø 8–9,
   espacées de **640 mm**, tête à ~7 mm du mur.
 
@@ -83,6 +85,6 @@ Z = 0 sur la face contre le dos des panneaux.
 **Aucun pont.** Tout part du plateau ou monte en pente à 45° au plus :
 - le creux du pied à trou de serrure se referme en toit en V à 45° ; la tête de la vis murale
   se cale contre les deux pentes, à ~6,5 mm de la face côté mur ;
-- les fenêtres des joues des berceaux ont un sommet en pointe à 45°, les trous M4 sont en goutte ;
+- les trous M4 des piliers sont en goutte, les goussets en pente à 45° ;
 - seuls restent les débords de 0,8 mm des lèvres des clips du Pi et le haut plat de 3 mm des trous oblongs M4.
-Volume : 35 cm³ (simple), 61 cm³ (simple + alim), 56 cm³ (Pi + alim). Hauteur d'impression : 49 mm.
+Volume : 35 cm³ (simple), 45 cm³ (simple + alim), 40 cm³ (Pi + alim). Hauteur d'impression : 49 mm.

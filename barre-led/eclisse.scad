@@ -94,7 +94,11 @@ alim_trou_z = 12.5;
 vis_alim_d  = 4.5;            // passage M4
 vis_alim_jeu_x = 1.5;         // trou oblong ±1,5 mm en X (tolérance d'entraxe)
 berceau_jeu = 0.4;            // jeu latéral autour du boîtier
-berceau_paroi = 3;            // M4 × 8 + rondelle → 4,2 mm dans le boîtier
+berceau_paroi = 3;            // épaisseur des piliers : M4 × 8 + rondelle → 4,2 mm dans le boîtier
+pilier_marge  = 4;            // matière autour du trou oblong
+cadre_h     = 8;              // hauteur du cadre bas sous l'alim
+cadre_ep    = 2.4;            // épaisseur des traverses
+gousset     = 18;             // gousset extérieur des piliers (45°)
 montrer_alim = false;         // true pour visualiser l'alim (ne pas exporter)
 
 /* ---------- Fixation murale ---------- */
@@ -224,11 +228,11 @@ module butee() {
 }
 
 // Berceau d'alimentation, côté +X (miroir pour -X).
-// Tout part du plateau (aucun porte-à-faux, aucun pont) :
-//  - deux joues latérales vissées dans les taraudages M4 du boîtier ; elles montent
-//    jusqu'au mur et servent de pieds d'écartement ;
-//  - le prolongement des deux nervures, sur lequel le boîtier repose ;
-//  - deux entretoises transversales qui rigidifient l'ensemble.
+// Réduit au strict nécessaire, tout part du plateau (aucun porte-à-faux, aucun pont) :
+//  - un cadre bas (2 longerons + 2 traverses) relié au bord de la plaque ;
+//  - sur chaque longeron, un pilier qui reçoit la vis M4 latérale du boîtier
+//    et monte jusqu'au mur (pied d'écartement), contreventé par un gousset à 45°.
+// Le boîtier ne repose sur rien : il est tenu par ses 4 vis M4.
 x_alim  = entraxe_eclisses / 2 - alim_l / 2;    // extrémité du boîtier (52,5 mm)
 x_vis   = x_alim + alim_trou_x;                 // axe des vis M4 (85 mm)
 z_vis   = alim_z0 + alim_trou_z;                // 27,5 mm
@@ -238,35 +242,29 @@ module trou_goutte(d) {                         // trou horizontal en goutte (so
 }
 module berceau() {
     x0 = plaque_x / 2;
-    x1 = x_vis + vis_alim_d / 2 + vis_alim_jeu_x + 6;
-    l  = x1 - x0;
-    yi = alim_w / 2 + berceau_jeu;               // face intérieure des joues
+    pil = vis_alim_d + 2 * vis_alim_jeu_x + 2 * pilier_marge;   // largeur du pilier (X)
+    x1 = x_vis + pil / 2;
+    yi = alim_w / 2 + berceau_jeu;               // face intérieure des piliers
     ye = yi + berceau_paroi;
-    ep = 2.4;
-    // prolongement des nervures
-    for (s = [-1, 1])
-        translate([x0 - 2, s * nervure_pos_y - 1.5, 0])
-            cube([l + 2, 3, alim_z0]);
+    // traverses : au bord de la plaque et en bout
+    translate([x0 - 2, -ye, 0]) cube([cadre_ep + 2, 2 * ye, cadre_h]);
+    translate([x1 - cadre_ep, -ye, 0]) cube([cadre_ep, 2 * ye, cadre_h]);
     for (s = [-1, 1]) mirror([0, s < 0 ? 1 : 0, 0]) {
+        // longeron
+        translate([x0, yi, 0]) cube([x1 - x0, berceau_paroi, cadre_h]);
+        // pilier + trou oblong M4 en goutte
         difference() {
-            translate([x0, yi, 0]) cube([l, berceau_paroi, ecart_mur]);
-            // trou oblong M4 en goutte
+            translate([x_vis - pil / 2, yi, 0]) cube([pil, berceau_paroi, ecart_mur]);
             translate([0, yi + berceau_paroi + e, 0]) rotate([90, 0, 0])
                 linear_extrude(berceau_paroi + 2 * e) hull()
                     for (dx = [-vis_alim_jeu_x, vis_alim_jeu_x])
                         translate([x_vis + dx, z_vis]) trou_goutte(vis_alim_d);
-            // fenêtre d'allègement en ogive (sommet à 45°)
-            fx0 = x0 + 6; fx1 = x_vis - vis_alim_d / 2 - vis_alim_jeu_x - 6;
-            fw = fx1 - fx0; fz0 = alim_z0 + 4; fz1 = ecart_mur - 6;
-            translate([fx0, yi + berceau_paroi + e, 0]) rotate([90, 0, 0])
-                linear_extrude(berceau_paroi + 2 * e)
-                    polygon([[0, fz0], [fw, fz0], [fw, max(fz0, fz1 - fw / 2)],
-                             [fw / 2, fz1], [0, max(fz0, fz1 - fw / 2)]]);
         }
+        // gousset extérieur à 45° (pente vers le haut, imprimable)
+        translate([x_vis - cadre_ep / 2, ye - e, 0]) rotate([90, 0, 90])
+            linear_extrude(cadre_ep)
+                polygon([[0, 0], [gousset, 0], [0, gousset]]);
     }
-    // entretoises : au bord de la plaque et en bout de berceau
-    translate([x0 - 2, -ye, 0]) cube([ep + 2, 2 * ye, alim_z0]);
-    translate([x1 - ep, -ye, 0]) cube([ep, 2 * ye, alim_z0]);
     if (montrer_alim)
         %translate([x_alim, -alim_w / 2, alim_z0]) cube([alim_l, alim_w, alim_h]);
 }
