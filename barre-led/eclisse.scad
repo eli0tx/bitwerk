@@ -106,7 +106,7 @@ pied_y0     = 26;             // départ du pied (soudé à la nervure)
 pied_y1     = 54;             // fin du pied (avant les lumières M3)
 pied_paroi  = 2;
 butee_d     = 12;             // pied du bas : simple colonne creuse d'appui
-pied_toit   = 3;              // épaisseur de la face côté mur
+pied_toit   = 2;              // épaisseur de la face côté mur (au sommet du toit en V)
 serrure_tete_d = 10;          // passage de la tête de vis murale (tête Ø ≤ 9)
 serrure_fente  = 4.5;         // largeur de la fente (vis Ø 4)
 serrure_y      = 36;          // centre du grand trou
@@ -181,16 +181,25 @@ module clips_pi() {
         mirror([sx < 0 ? 1 : 0, 0, 0]) translate([0, sy * clip_pos_y, 0]) crochet();
 }
 
-// Pied d'écartement creux ; le toit (côté mur) porte éventuellement un trou de serrure
+// Pied d'écartement creux. Sans trou de serrure : tube ouvert aux deux bouts.
+// Avec trou de serrure : le creux se referme en toit à 45° (pas de pont à l'impression) ;
+// la tête de la vis murale vient se caler contre les deux pentes.
 module pied(serrure) {
+    wi = pied_x - 2 * pied_paroi;                     // largeur intérieure (X)
+    li = pied_y1 - pied_y0 - 2 * pied_paroi;          // longueur intérieure (Y)
+    z_toit = ecart_mur - pied_toit - wi / 2;          // départ des pentes
     difference() {
         translate([-pied_x / 2, pied_y0, 0]) cube([pied_x, pied_y1 - pied_y0, ecart_mur]);
-        // creux, ouvert côté panneau (il tombe dans la fenêtre d'allègement)
-        translate([-pied_x / 2 + pied_paroi, pied_y0 + pied_paroi, -e])
-            cube([pied_x - 2 * pied_paroi, pied_y1 - pied_y0 - 2 * pied_paroi,
-                  serrure ? ecart_mur - pied_toit + e : ecart_mur + 2 * e]);
+        translate([-wi / 2, pied_y0 + pied_paroi, -e]) {
+            cube([wi, li, (serrure ? z_toit : ecart_mur) + 2 * e]);
+            if (serrure)                              // toit en V à 45°
+                translate([0, 0, z_toit]) hull() {
+                    cube([wi, li, e]);
+                    translate([wi / 2 - e, 0, wi / 2]) cube([2 * e, li, e]);
+                }
+        }
         if (serrure)
-            translate([0, 0, ecart_mur - pied_toit - e]) linear_extrude(pied_toit + 2 * e) {
+            translate([0, 0, z_toit]) linear_extrude(ecart_mur - z_toit + e) {
                 translate([0, serrure_y]) circle(d = serrure_tete_d);
                 hull() {
                     translate([0, serrure_y]) circle(d = serrure_fente);
@@ -234,9 +243,12 @@ module berceau() {
     for (s = [-1, 1]) mirror([0, s < 0 ? 1 : 0, 0]) {
         difference() {
             translate([x0, yi, 0]) cube([berceau_l, berceau_paroi, z_dessus + 2 * berceau_levre]);
-            // fenêtre d'allègement (rend aussi la joue plus souple pour clipser)
-            translate([x0 + 6, yi - e, alim_z0 + 6])
-                cube([berceau_l - 12, berceau_paroi + 2 * e, alim_h - 14]);
+            // fenêtre d'allègement en ogive (sommet à 45°, pas de pont),
+            // rend aussi la joue plus souple pour clipser
+            fw = berceau_l - 12; fz0 = alim_z0 + 6; fz1 = alim_z0 + alim_h - 8;
+            translate([x0 + 6, yi + berceau_paroi + e, 0]) rotate([90, 0, 0])
+                linear_extrude(berceau_paroi + 2 * e)
+                    polygon([[0, fz0], [fw, fz0], [fw, fz1 - fw / 2], [fw / 2, fz1], [0, fz1 - fw / 2]]);
         }
         translate([x0, yi - rebord, 0]) cube([berceau_l, rebord + e, alim_z0]);
         // lèvre de clipsage, chanfrein d'entrée côté mur

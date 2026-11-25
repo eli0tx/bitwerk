@@ -64,7 +64,7 @@ Z = 0 sur la face contre le dos des panneaux.
   entre le dos des panneaux et le mur. Tous les pieds font cette hauteur, le Pi passe largement.
 - Pied du haut : boîtier creux 15 × 28 mm, avec **trou de serrure** sur les deux éclisses simples
   (Ø 10 pour la tête, fente 4,5 mm vers le haut). Vis murales Ø 4 à tête Ø 8–9, espacées de **640 mm**,
-  tête à ~5 mm du mur.
+  tête à ~7 mm du mur.
 - Pied du bas : simple colonne creuse Ø 12 qui maintient la barre parallèle au mur.
 - `fixation_murale = false` retire les pieds.
 
@@ -83,5 +83,10 @@ Z = 0 sur la face contre le dos des panneaux.
 ## Impression
 
 À plat, Z = 0 sur le plateau (face lisse), sans support. PETG, 4 périmètres.
-Seul le toit du pied à trou de serrure fait un pont de 11 mm. Les berceaux montent tous depuis le plateau.
-Volume : 35 cm³ (simple), 61 cm³ (simple + alim), 64 cm³ (Pi + alim). Hauteur d'impression : 52 mm.
+**Aucun pont.** Tout part du plateau ou monte en pente à 45° au plus :
+- le creux du pied à trou de serrure se referme en toit en V à 45° ; la tête de la vis murale
+  se cale contre les deux pentes, à ~6,5 mm de la face côté mur ;
+- les fenêtres des joues des berceaux ont un sommet en pointe à 45° ;
+- seuls restent les petits débords des lèvres de clipsage (0,8 mm pour le Pi, 1,6 mm pour l'alim),
+  qui doivent être plats pour retenir et s'impriment sans support.
+Volume : 35 cm³ (simple), 62 cm³ (simple + alim), 64 cm³ (Pi + alim). Hauteur d'impression : 52 mm.
