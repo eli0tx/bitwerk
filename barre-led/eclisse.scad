@@ -53,11 +53,40 @@ pi_entraxe_x  = 58;
 pi_entraxe_y  = 23;
 plot_d        = 6;
 plot_h        = 5;            // au-dessus de la plaque
+plot_marge    = 2.5;          // matière autour de la base d'un plot
+pi_x = 65; pi_y = 30;         // dimensions du circuit imprimé
+pi_fixation   = "clips";      // "clips" (sans vis) ou "vis" (autotaraudeuses M2,5)
+
+// -- fixation par vis
 plot_trou_d   = 2.2;          // vis autotaraudeuse M2,5
 plot_fond     = 1.2;          // trou borgne : la vis ne traverse pas la face Z = 0 (-1 = traversant)
-plot_marge    = 2.5;          // matière autour de la base d'un plot
-pi_x = 65; pi_y = 30;         // encombrement du Pi (fantôme uniquement)
+
+// -- fixation par clips : 4 pions de centrage dans les trous du Pi
+//    + 4 crochets souples qui viennent sur les petits côtés du circuit
+pcb_ep        = 1.4;          // ÉPAISSEUR DU CIRCUIT À MESURER (règle la hauteur des lèvres)
+pion_d        = 2.4;          // trous du Pi : Ø 2,75
+clip_ep       = 1.2;          // épaisseur du bras (souplesse)
+clip_l        = 4;            // largeur du crochet
+clip_debord   = 0.6;          // recouvrement de la lèvre sur le circuit
+clip_jeu      = 0.2;          // jeu entre le circuit et le crochet
+clip_pos_y    = 11.5;         // crochets près des coins, à côté du lecteur SD et du connecteur caméra
 montrer_pi = false;           // true pour visualiser le Pi (ne pas exporter)
+
+/* ---------- Fixation murale ---------- */
+// Y+ = haut de la barre une fois accrochée.
+// Éclisses simples : 2 pieds d'écartement, celui du haut avec un trou de serrure.
+// Éclisse Pi : 2 pieds d'écartement sans trou de serrure (empêchent la barre de fléchir au milieu).
+fixation_murale = true;
+ecart_mur   = 35;             // dos des panneaux → mur (le Pi + carte HUB75 + nappe ≈ 30 mm)
+pied_x      = 18;             // largeur du pied
+pied_y0     = 26;             // départ du pied (soudé à la nervure)
+pied_y1     = 56;             // fin du pied (avant les lumières M3)
+pied_paroi  = 2.5;
+pied_toit   = 3;              // épaisseur de la face côté mur
+serrure_tete_d = 10;          // passage de la tête de vis murale (tête Ø ≤ 9)
+serrure_fente  = 4.5;         // largeur de la fente (vis Ø 4)
+serrure_y      = 36;          // centre du grand trou
+serrure_course = 10;          // longueur de la fente, vers le haut
 
 $fn = 40;
 e = 0.01;
@@ -94,6 +123,59 @@ module profil() {
     }
 }
 
+z_pcb = plaque_z + plot_h;     // dessous du circuit du Pi
+
+module plots_pi() {
+    for (sx = [-1, 1], sy = [-1, 1])
+        translate([sx * pi_entraxe_x / 2, sy * pi_entraxe_y / 2, plaque_z - e]) {
+            cylinder(d = plot_d, h = plot_h + e);
+            if (pi_fixation == "clips") {          // pion de centrage chanfreiné
+                cylinder(d = pion_d, h = plot_h + pcb_ep + 0.3);
+                translate([0, 0, plot_h + pcb_ep + 0.3])
+                    cylinder(d1 = pion_d, d2 = pion_d - 0.8, h = 0.6);
+            }
+        }
+}
+
+// Crochet : bras vertical + lèvre à chanfrein d'entrée, côté +X (miroir pour -X)
+module crochet() {
+    x0 = pi_x / 2 + clip_jeu;                    // face intérieure du bras
+    z_levre = z_pcb + pcb_ep + clip_jeu;         // dessous de la lèvre
+    levre_h = 1.6;
+    a = clip_debord + clip_jeu;                  // avancée de la lèvre
+    translate([x0, -clip_l / 2, plaque_z - e])
+        cube([clip_ep, clip_l, z_levre + levre_h - plaque_z + e]);
+    // profil de lèvre dans le plan XZ, extrudé sur la largeur du crochet
+    translate([0, clip_l / 2, 0]) rotate([90, 0, 0])
+        linear_extrude(clip_l)
+            polygon([[x0 + e, z_levre], [x0 - a, z_levre],
+                     [x0 - a, z_levre + 0.3], [x0 + e, z_levre + levre_h]]);
+}
+
+module clips_pi() {
+    for (sx = [-1, 1], sy = [-1, 1])
+        mirror([sx < 0 ? 1 : 0, 0, 0]) translate([0, sy * clip_pos_y, 0]) crochet();
+}
+
+// Pied d'écartement creux ; le toit (côté mur) porte éventuellement un trou de serrure
+module pied(serrure) {
+    difference() {
+        translate([-pied_x / 2, pied_y0, 0]) cube([pied_x, pied_y1 - pied_y0, ecart_mur]);
+        // creux, ouvert côté panneau (il tombe dans la fenêtre d'allègement)
+        translate([-pied_x / 2 + pied_paroi, pied_y0 + pied_paroi, -e])
+            cube([pied_x - 2 * pied_paroi, pied_y1 - pied_y0 - 2 * pied_paroi,
+                  serrure ? ecart_mur - pied_toit + e : ecart_mur + 2 * e]);
+        if (serrure)
+            translate([0, 0, ecart_mur - pied_toit - e]) linear_extrude(pied_toit + 2 * e) {
+                translate([0, serrure_y]) circle(d = serrure_tete_d);
+                hull() {
+                    translate([0, serrure_y]) circle(d = serrure_fente);
+                    translate([0, serrure_y + serrure_course]) circle(d = serrure_fente);
+                }
+            }
+    }
+}
+
 module eclisse() {
     difference() {
         union() {
@@ -101,18 +183,22 @@ module eclisse() {
             for (s = [-1, 1])
                 translate([-nervure_x / 2, s * nervure_pos_y - nervure_y / 2, plaque_z - e])
                     cube([nervure_x, nervure_y, nervure_z + e]);
-            if (variante == "pi")
-                for (sx = [-1, 1], sy = [-1, 1])
-                    translate([sx * pi_entraxe_x / 2, sy * pi_entraxe_y / 2, plaque_z - e])
-                        cylinder(d = plot_d, h = plot_h + e);
+            if (variante == "pi") {
+                plots_pi();
+                if (pi_fixation == "clips") clips_pi();
+            }
+            if (fixation_murale) {
+                pied(variante != "pi");                 // haut : trou de serrure
+                mirror([0, 1, 0]) pied(false);          // bas : simple appui
+            }
         }
-        if (variante == "pi")
+        if (variante == "pi" && pi_fixation == "vis")
             for (sx = [-1, 1], sy = [-1, 1])
                 translate([sx * pi_entraxe_x / 2, sy * pi_entraxe_y / 2, plot_fond])
                     cylinder(d = plot_trou_d, h = plaque_z + plot_h);
     }
     if (variante == "pi" && montrer_pi)
-        %translate([-pi_x / 2, -pi_y / 2, plaque_z + plot_h]) cube([pi_x, pi_y, 1]);
+        %translate([-pi_x / 2, -pi_y / 2, z_pcb]) cube([pi_x, pi_y, pcb_ep]);
 }
 
 eclisse();
