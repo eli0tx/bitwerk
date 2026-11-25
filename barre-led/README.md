@@ -21,8 +21,11 @@ openscad -D 'variante="pi"'     -o eclisse_pi.stl     eclisse.scad
 
 Repère : X = 0 sur la jonction, Y = 0 à mi-hauteur, Z = 0 sur la face contre le dos des panneaux.
 
-- Plaque 80 × 150 × 4 mm, centrée sur la jonction.
-- 2 nervures 76 × 5 × 8 mm (8 mm au-dessus de la plaque, Z 4 → 12), centrées à Y = ±25.
+- Plaque 80 × 150 × 3 mm, coins arrondis R4, centrée sur la jonction.
+- Allègement en échelle : 3 fenêtres traversantes (centrale + haut/bas). Restent les bandes de vissage,
+  les semelles des nervures (3 mm de chaque côté) et deux longerons latéraux de 6 mm.
+  `allegement = false` redonne une plaque pleine.
+- 2 nervures 76 × 5 × 8 mm (Z 3 → 11), centrées à Y = ±25.
 - 4 lumières M3 de 3,4 mm, centres d'arrondi de X = ±8 à ±34 (lumière de 6,3 à 35,7 mm), à Y = ±60.
 - Encoches repères 1,2 × 2,5 mm à X = 0, en haut et en bas.
 - Variante Pi : 4 plots Ø 6 × 5 mm à X = ±29, Y = ±11,5 (entraxe 58 × 23),
@@ -35,5 +38,7 @@ Repère : X = 0 sur la jonction, Y = 0 à mi-hauteur, Z = 0 sur la face contre l
 - Profondeur : plaque + plots + Pi + carte HUB75 dépassent les ~15 mm d'épaisseur des panneaux.
 
 ## Impression
+
+Volume : 23,8 cm³ (simple) et 26,7 cm³ (Pi), contre 52,5 cm³ pour la plaque pleine de 4 mm.
 
 À plat, Z = 0 sur le plateau (face lisse), sans support. PETG, 4 périmètres.
