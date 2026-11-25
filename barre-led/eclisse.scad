@@ -28,7 +28,7 @@ variante = "simple";          // "simple"      : X = -320, sans berceau
 
 /* ---------- Plaque ---------- */
 plaque_x = 80;                // 40 mm de chaque côté de la jonction
-plaque_y = 150;
+plaque_y = 156;               // trous à ±70 + rondelle Ø 9 + 3,5 mm de bord (panneau : 160)
 plaque_z = 3;                 // 3 mm suffisent : la rigidité vient des nervures
 plaque_r = 4;                 // coins arrondis (moins de décollement)
 
@@ -46,11 +46,12 @@ nervure_z = 8;                // hauteur au-dessus de la plaque
 nervure_pos_y = 25;           // nervures à ±25
 
 /* ---------- Trous oblongs M3 ---------- */
-// À VÉRIFIER sur les panneaux : position des inserts M3 au dos.
+// Inserts M3 mesurés sur les panneaux (YS-P5-320X160-16S) : aux coins, à 8 mm du bord
+// côté jonction, entraxe vertical 140 mm. Lumières centrées sur X = ±8, ±3 mm de réglage.
 oblong_largeur = 3.4;
-oblong_x_min   = 8;           // centre de l'arrondi intérieur de la lumière
-oblong_x_max   = 34;          // centre de l'arrondi extérieur de la lumière
-oblong_pos_y   = 60;          // lumières à ±60
+oblong_x_min   = 5;           // centre de l'arrondi intérieur de la lumière
+oblong_x_max   = 11;          // centre de l'arrondi extérieur de la lumière
+oblong_pos_y   = 70;          // lumières à ±70
 
 /* ---------- Encoches repères (axe de jonction) ---------- */
 encoche_x = 1.2;

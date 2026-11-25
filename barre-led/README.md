@@ -26,9 +26,10 @@ openscad -D 'variante="pi"'          -o eclisse_pi.stl          eclisse.scad
 Repère : X = 0 sur la jonction, Y = 0 à mi-hauteur (Y+ = haut de la barre accrochée),
 Z = 0 sur la face contre le dos des panneaux.
 
-- Plaque 80 × 150 × 3 mm, coins arrondis R4, ajourée en échelle (`allegement = false` pour une plaque pleine).
+- Plaque 80 × 156 × 3 mm, coins arrondis R4, ajourée en échelle (`allegement = false` pour une plaque pleine).
 - 2 nervures 76 × 5 × 8 mm (Z 3 → 11), centrées à Y = ±25.
-- 4 lumières M3 de 3,4 mm, centres d'arrondi de X = ±8 à ±34, à Y = ±60.
+- 4 lumières M3 de 3,4 mm centrées sur les inserts mesurés : X = ±8 (réglage ±3 mm), Y = ±70.
+  Panneaux YS-P5-320X160-16S : inserts aux coins à 8 mm du bord, entraxe vertical 140 mm.
 - Encoches repères 1,2 × 2,5 mm à X = 0, en haut et en bas.
 
 ### Raspberry Pi (éclisse centrale)
@@ -75,7 +76,6 @@ Z = 0 sur la face contre le dos des panneaux.
 
 ## À vérifier avant impression
 
-- Position des inserts M3 au dos des panneaux (Y = ±60, X = 8 → 34 supposés).
 - Épaisseur du circuit du Pi (`pcb_ep`, 1,4 à 1,6 mm selon les sources : les deux passent).
 - Hauteur des connecteurs au dos des panneaux (`alim_z0`).
 
@@ -87,4 +87,4 @@ Z = 0 sur la face contre le dos des panneaux.
   se cale contre les deux pentes, à ~6,5 mm de la face côté mur ;
 - les trous M4 des piliers sont en goutte, les goussets en pente à 45° ;
 - seuls restent les débords de 0,8 mm des lèvres des clips du Pi et le haut plat de 3 mm des trous oblongs M4.
-Volume : 35 cm³ (simple), 45 cm³ (simple + alim), 40 cm³ (Pi + alim). Hauteur d'impression : 49 mm.
+Volume : 33 cm³ (simple), 43 cm³ (simple + alim), 38 cm³ (Pi + alim). Hauteur d'impression : 49 mm.
