@@ -43,34 +43,31 @@ Z = 0 sur la face contre le dos des panneaux.
 
 ### Alimentation
 
-**Mean Well LRS-200-5** (5 V 40 A) — surtout pas la version 48 V : panneaux et Pi sont en 5 V.
-4 panneaux × 18 W max = 72 W, soit 14,4 A ; la 200 W garde une large marge et chauffe peu.
+**Mean Well LRS-200-5** (5 V 40 A, boîtier n° 207 : 215 × 115 × 30 mm).
 
-- Boîtier 215 × 115 × 30 mm posé à plat entre l'éclisse Pi (X = 0) et l'éclisse X = +320,
-  centré à X = +160 (au dos du 3ᵉ panneau), à 15 mm du dos des panneaux (`alim_z0`)
-  pour passer au-dessus des connecteurs HUB75 et d'alimentation.
-- Chaque éclisse porte un berceau qui reçoit une extrémité (17 mm de recouvrement) :
-  repose sur le prolongement des nervures et sur un rebord le long des joues ;
-  les joues reprennent le poids (barre au mur) et **clipsent** le dessus du boîtier.
-  On pose l'alim en la poussant dans les deux berceaux depuis le côté mur.
-- Une butée basse (3 mm) en bout de chaque berceau empêche le boîtier de glisser
-  sans gêner les fils du bornier.
+- Posée à plat entre l'éclisse Pi (X = 0) et l'éclisse X = +320, centrée à X = +160,
+  à 15 mm du dos des panneaux (`alim_z0`) pour passer au-dessus de leurs connecteurs.
+- **Vissée** dans ses taraudages M4 latéraux (plan Mean Well : 2 par grand côté, à 32,5 mm de chaque bout,
+  12,5 mm du dessous, vis ≤ 5 mm dans le boîtier) : 4 vis **M4 × 8 + rondelle**
+  (ou M4 × 6 sans rondelle). Trous oblongs ±1,5 mm pour rattraper l'entraxe des éclisses.
+- Chaque berceau : deux joues vissées, le prolongement des nervures sous le boîtier et deux entretoises.
+  Les joues montent jusqu'au mur et servent de pieds d'écartement.
 - **Sécurité** : le bornier reçoit le 230 V. Câbler avant de poser la barre, serrer la terre,
-  et ne pas laisser de conducteur dénudé.
+  sélecteur d'entrée sur 230 V.
 
 ### Fixation murale
 
-- `ecart_mur` est calculé à partir de l'alim : 15 + 30 + lèvres + 4 mm d'air ≈ **52 mm**
-  entre le dos des panneaux et le mur. Tous les pieds font cette hauteur, le Pi passe largement.
-- Pied du haut : boîtier creux 15 × 28 mm, avec **trou de serrure** sur les deux éclisses simples
-  (Ø 10 pour la tête, fente 4,5 mm vers le haut). Vis murales Ø 4 à tête Ø 8–9, espacées de **640 mm**,
-  tête à ~7 mm du mur.
-- Pied du bas : simple colonne creuse Ø 12 qui maintient la barre parallèle au mur.
-- `fixation_murale = false` retire les pieds.
+- `ecart_mur` = 15 + 30 + 4 mm d'air = **49 mm** entre le dos des panneaux et le mur.
+- Éclisse X = −320 : pied à trou de serrure en haut + colonne creuse Ø 12 en bas.
+- Éclisse X = +320 : pied à trou de serrure ; les joues du berceau font l'appui.
+- Éclisse Pi : pas de pied, ses joues de berceau s'appuient contre le mur.
+- Trous de serrure : Ø 10 pour la tête, fente 4,5 mm vers le haut. Vis murales Ø 4 à tête Ø 8–9,
+  espacées de **640 mm**, tête à ~7 mm du mur.
 
 ## Visserie
 
 - Éclisses → panneaux : 12 × M3 × 8 (tête bouton ISO 7380 ou cylindrique ISO 4762) + 12 rondelles larges DIN 9021.
+- Alimentation : 4 × M4 × 8 + 4 rondelles M4 (ou 4 × M4 × 6 sans rondelle) — jamais plus de 5 mm dans le boîtier.
 - Mur : 2 vis Ø 4 + chevilles.
 - Pi : aucune vis (clips).
 
@@ -78,7 +75,7 @@ Z = 0 sur la face contre le dos des panneaux.
 
 - Position des inserts M3 au dos des panneaux (Y = ±60, X = 8 → 34 supposés).
 - Épaisseur du circuit du Pi (`pcb_ep`, 1,4 à 1,6 mm selon les sources : les deux passent).
-- Dimensions de l'alim reçue (215 × 115 × 30 mm) et hauteur des connecteurs au dos des panneaux (`alim_z0`).
+- Hauteur des connecteurs au dos des panneaux (`alim_z0`).
 
 ## Impression
 
@@ -86,7 +83,6 @@ Z = 0 sur la face contre le dos des panneaux.
 **Aucun pont.** Tout part du plateau ou monte en pente à 45° au plus :
 - le creux du pied à trou de serrure se referme en toit en V à 45° ; la tête de la vis murale
   se cale contre les deux pentes, à ~6,5 mm de la face côté mur ;
-- les fenêtres des joues des berceaux ont un sommet en pointe à 45° ;
-- seuls restent les petits débords des lèvres de clipsage (0,8 mm pour le Pi, 1,6 mm pour l'alim),
-  qui doivent être plats pour retenir et s'impriment sans support.
-Volume : 35 cm³ (simple), 62 cm³ (simple + alim), 64 cm³ (Pi + alim). Hauteur d'impression : 52 mm.
+- les fenêtres des joues des berceaux ont un sommet en pointe à 45°, les trous M4 sont en goutte ;
+- seuls restent les débords de 0,8 mm des lèvres des clips du Pi et le haut plat de 3 mm des trous oblongs M4.
+Volume : 35 cm³ (simple), 61 cm³ (simple + alim), 56 cm³ (Pi + alim). Hauteur d'impression : 49 mm.

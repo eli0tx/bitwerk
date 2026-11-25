@@ -15,9 +15,10 @@
 //   openscad -D 'variante="simple_alim"' -o eclisse_simple_alim.stl eclisse.scad
 //   openscad -D 'variante="pi"'          -o eclisse_pi.stl          eclisse.scad
 //
-// Alimentation Mean Well LRS-200-5 (5 V 40 A, 215 × 115 × 30 mm) posée entre
-// l'éclisse Pi (X = 0) et l'éclisse X = +320 : chacune porte un berceau qui
-// reçoit une extrémité du boîtier.
+// Alimentation Mean Well LRS-200-5 (5 V 40 A, boîtier n° 207 : 215 × 115 × 30 mm)
+// posée entre l'éclisse Pi (X = 0) et l'éclisse X = +320 : chacune porte un berceau
+// dont les joues sont vissées dans les taraudages M4 latéraux du boîtier
+// et servent aussi de pieds d'écartement contre le mur.
 //
 // Impression : à plat, Z = 0 sur le plateau, sans support. PETG, 4 périmètres.
 
@@ -86,21 +87,25 @@ alim_h      = 30;
 alim_z0     = 15;             // dessous de l'alim au-dessus du dos des panneaux
                               // (passe au-dessus des connecteurs HUB75 et d'alimentation des panneaux)
 entraxe_eclisses = 320;       // l'alim est centrée entre deux éclisses
-berceau_l   = 30;             // longueur du berceau au-delà du bord de la plaque
+// Taraudages latéraux (plan Mean Well) : 4 × M4, 2 par grand côté,
+// à 32,5 mm de chaque bout et 12,5 mm du dessous ; pénétration de vis ≤ 5 mm.
+alim_trou_x = 32.5;
+alim_trou_z = 12.5;
+vis_alim_d  = 4.5;            // passage M4
+vis_alim_jeu_x = 1.5;         // trou oblong ±1,5 mm en X (tolérance d'entraxe)
 berceau_jeu = 0.4;            // jeu latéral autour du boîtier
-berceau_paroi = 3;
-berceau_levre = 1.2;          // lèvre qui clipse le dessus du boîtier
-berceau_butee_h = 3;          // petite butée qui empêche l'alim de glisser (n'empêche pas le câblage)
+berceau_paroi = 3;            // M4 × 8 + rondelle → 4,2 mm dans le boîtier
 montrer_alim = false;         // true pour visualiser l'alim (ne pas exporter)
 
 /* ---------- Fixation murale ---------- */
 // Y+ = haut de la barre une fois accrochée.
-// Éclisses simples : 2 pieds d'écartement, celui du haut avec un trou de serrure.
-// Éclisse Pi : 2 pieds d'écartement sans trou de serrure (empêchent la barre de fléchir au milieu).
+// Éclisse X = -320 : pied à trou de serrure en haut + colonne d'appui en bas.
+// Éclisse X = +320 : pied à trou de serrure ; l'appui est assuré par les joues du berceau.
+// Éclisse Pi : aucun pied, les joues du berceau s'appuient contre le mur.
 fixation_murale = true;
-marge_mur   = 4;              // air entre l'alim et le mur
-// dos des panneaux → mur : dessus de l'alim + lèvres du berceau + marge
-ecart_mur   = alim_z0 + alim_h + berceau_jeu + 2 * berceau_levre + marge_mur;
+marge_mur   = 4;              // air entre le dessus de l'alim et le mur
+// dos des panneaux → mur : dessus de l'alim + marge
+ecart_mur   = alim_z0 + alim_h + marge_mur;
 pied_x      = 15;             // largeur du pied
 pied_y0     = 26;             // départ du pied (soudé à la nervure)
 pied_y1     = 54;             // fin du pied (avant les lumières M3)
@@ -219,47 +224,49 @@ module butee() {
 }
 
 // Berceau d'alimentation, côté +X (miroir pour -X).
-// Tout part du plateau (aucun porte-à-faux) :
-//  - deux joues latérales qui reprennent le poids (barre au mur : gravité selon -Y)
-//    et clipsent le dessus du boîtier ; en bas, un rebord sur lequel le boîtier repose ;
-//  - le prolongement des deux nervures, sur lequel le boîtier repose aussi ;
-//  - deux entretoises transversales : l'une soudée au bord de la plaque,
-//    l'autre en bout, qui dépasse un peu et sert de butée.
-x_alim = entraxe_eclisses / 2 - alim_l / 2;     // extrémité du boîtier (52,5 mm)
+// Tout part du plateau (aucun porte-à-faux, aucun pont) :
+//  - deux joues latérales vissées dans les taraudages M4 du boîtier ; elles montent
+//    jusqu'au mur et servent de pieds d'écartement ;
+//  - le prolongement des deux nervures, sur lequel le boîtier repose ;
+//  - deux entretoises transversales qui rigidifient l'ensemble.
+x_alim  = entraxe_eclisses / 2 - alim_l / 2;    // extrémité du boîtier (52,5 mm)
+x_vis   = x_alim + alim_trou_x;                 // axe des vis M4 (85 mm)
+z_vis   = alim_z0 + alim_trou_z;                // 27,5 mm
+module trou_goutte(d) {                         // trou horizontal en goutte (sommet à 45°)
+    circle(d = d);
+    rotate(45) square(d / 2);
+}
 module berceau() {
     x0 = plaque_x / 2;
-    x1 = x0 + berceau_l;
+    x1 = x_vis + vis_alim_d / 2 + vis_alim_jeu_x + 6;
+    l  = x1 - x0;
     yi = alim_w / 2 + berceau_jeu;               // face intérieure des joues
     ye = yi + berceau_paroi;
-    rebord = 4;                                  // appui du boîtier le long des joues
-    ep = 2.4;                                    // épaisseur des entretoises
-    z_dessus = alim_z0 + alim_h + berceau_jeu;   // dessous de la lèvre
-    xb = x_alim - 1 - ep;                        // entretoise-butée, 1 mm avant le boîtier
+    ep = 2.4;
     // prolongement des nervures
     for (s = [-1, 1])
-        translate([x0 - 2, s * nervure_pos_y - nervure_y / 2, 0])
-            cube([x1 - x0 + 2, nervure_y, alim_z0]);
-    // joues + rebord d'appui
+        translate([x0 - 2, s * nervure_pos_y - 1.5, 0])
+            cube([l + 2, 3, alim_z0]);
     for (s = [-1, 1]) mirror([0, s < 0 ? 1 : 0, 0]) {
         difference() {
-            translate([x0, yi, 0]) cube([berceau_l, berceau_paroi, z_dessus + 2 * berceau_levre]);
-            // fenêtre d'allègement en ogive (sommet à 45°, pas de pont),
-            // rend aussi la joue plus souple pour clipser
-            fw = berceau_l - 12; fz0 = alim_z0 + 6; fz1 = alim_z0 + alim_h - 8;
-            translate([x0 + 6, yi + berceau_paroi + e, 0]) rotate([90, 0, 0])
+            translate([x0, yi, 0]) cube([l, berceau_paroi, ecart_mur]);
+            // trou oblong M4 en goutte
+            translate([0, yi + berceau_paroi + e, 0]) rotate([90, 0, 0])
+                linear_extrude(berceau_paroi + 2 * e) hull()
+                    for (dx = [-vis_alim_jeu_x, vis_alim_jeu_x])
+                        translate([x_vis + dx, z_vis]) trou_goutte(vis_alim_d);
+            // fenêtre d'allègement en ogive (sommet à 45°)
+            fx0 = x0 + 6; fx1 = x_vis - vis_alim_d / 2 - vis_alim_jeu_x - 6;
+            fw = fx1 - fx0; fz0 = alim_z0 + 4; fz1 = ecart_mur - 6;
+            translate([fx0, yi + berceau_paroi + e, 0]) rotate([90, 0, 0])
                 linear_extrude(berceau_paroi + 2 * e)
-                    polygon([[0, fz0], [fw, fz0], [fw, fz1 - fw / 2], [fw / 2, fz1], [0, fz1 - fw / 2]]);
+                    polygon([[0, fz0], [fw, fz0], [fw, max(fz0, fz1 - fw / 2)],
+                             [fw / 2, fz1], [0, max(fz0, fz1 - fw / 2)]]);
         }
-        translate([x0, yi - rebord, 0]) cube([berceau_l, rebord + e, alim_z0]);
-        // lèvre de clipsage, chanfrein d'entrée côté mur
-        translate([x0, 0, 0]) rotate([90, 0, 90]) linear_extrude(berceau_l)
-            polygon([[yi + e, z_dessus], [yi - berceau_levre, z_dessus],
-                     [yi - berceau_levre, z_dessus + 0.4], [yi + e, z_dessus + 2 * berceau_levre]]);
     }
-    // entretoise soudée au bord de la plaque
+    // entretoises : au bord de la plaque et en bout de berceau
     translate([x0 - 2, -ye, 0]) cube([ep + 2, 2 * ye, alim_z0]);
-    // entretoise-butée
-    translate([xb, -ye, 0]) cube([ep, 2 * ye, alim_z0 + berceau_butee_h]);
+    translate([x1 - ep, -ye, 0]) cube([ep, 2 * ye, alim_z0]);
     if (montrer_alim)
         %translate([x_alim, -alim_w / 2, alim_z0]) cube([alim_l, alim_w, alim_h]);
 }
@@ -276,8 +283,8 @@ module eclisse() {
                 if (pi_fixation == "clips") clips_pi();
             }
             if (fixation_murale) {
-                pied(variante != "pi");                 // haut : trou de serrure sur les éclisses simples
-                butee();                                // bas : simple appui
+                if (variante != "pi") pied(true);       // haut : trou de serrure
+                if (variante == "simple") butee();      // bas : simple appui
             }
             if (variante == "pi") berceau();
             if (variante == "simple_alim") mirror([1, 0, 0]) berceau();
