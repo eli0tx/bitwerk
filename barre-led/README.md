@@ -23,7 +23,7 @@ Repère : X = 0 sur la jonction, Y = 0 à mi-hauteur, Z = 0 sur la face contre l
 
 - Plaque 80 × 150 × 4 mm, centrée sur la jonction.
 - 2 nervures 76 × 5 × 8 mm (8 mm au-dessus de la plaque, Z 4 → 12), centrées à Y = ±25.
-- 4 lumières M3 de 3,4 mm, de X = ±8 à ±34 (bords extérieurs de la lumière), à Y = ±60.
+- 4 lumières M3 de 3,4 mm, centres d'arrondi de X = ±8 à ±34 (lumière de 6,3 à 35,7 mm), à Y = ±60.
 - Encoches repères 1,2 × 2,5 mm à X = 0, en haut et en bas.
 - Variante Pi : 4 plots Ø 6 × 5 mm à X = ±29, Y = ±11,5 (entraxe 58 × 23),
   trous Ø 2,2 mm borgnes (fond de 1,2 mm côté panneau) pour vis autotaraudeuses M2,5.

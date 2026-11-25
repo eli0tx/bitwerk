@@ -28,8 +28,8 @@ nervure_pos_y = [-25, 25];
 /* ---------- Trous oblongs M3 ---------- */
 // À VÉRIFIER sur les panneaux : position des inserts M3 au dos.
 oblong_largeur = 3.4;
-oblong_x_min   = 8;           // bord intérieur de la lumière
-oblong_x_max   = 34;          // bord extérieur de la lumière
+oblong_x_min   = 8;           // centre de l'arrondi intérieur de la lumière
+oblong_x_max   = 34;          // centre de l'arrondi extérieur de la lumière
 oblong_pos_y   = [-60, 60];
 
 /* ---------- Encoches repères (axe de jonction) ---------- */
@@ -50,11 +50,10 @@ $fn = 48;
 e = 0.01;
 
 module oblong(x0, x1, l) {
-    // lumière dont les extrémités extérieures vont de x0 à x1
-    r = l / 2;
+    // lumière dont les centres d'arrondi sont à x0 et x1
     hull() {
-        translate([x0 + r, 0, 0]) cylinder(d = l, h = plaque_z + 2 * e);
-        translate([x1 - r, 0, 0]) cylinder(d = l, h = plaque_z + 2 * e);
+        translate([x0, 0, 0]) cylinder(d = l, h = plaque_z + 2 * e);
+        translate([x1, 0, 0]) cylinder(d = l, h = plaque_z + 2 * e);
     }
 }
 
