@@ -9,33 +9,50 @@
 <meta name="theme-color" content="#111316">
 <title>Barre LED</title>
 <style>
-:root{--bg:#111316;--carte:#1b1e22;--ligne:#2c3036;--texte:#eef0f2;--doux:#9aa3ac;--accent:#ff3c28}
+:root{--bg:#111316;--carte:#1b1e22;--ligne:#2c3036;--texte:#eef0f2;--doux:#9aa3ac;--accent:#ff3c28;--ok:#34c759}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--texte);font:17px/1.4 -apple-system,system-ui,sans-serif;-webkit-text-size-adjust:100%}
 main{max-width:520px;margin:0 auto;padding:calc(16px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom))}
-h1{font-size:26px;margin:4px 0 16px;display:flex;align-items:center;justify-content:space-between}
+h1{font-size:26px;margin:4px 0 14px;display:flex;align-items:center;justify-content:space-between}
 .carte{background:var(--carte);border:1px solid var(--ligne);border-radius:14px;padding:14px;margin-bottom:14px}
-label{display:block;color:var(--doux);font-size:14px;margin-bottom:8px}
+label,.titre{display:block;color:var(--doux);font-size:14px;margin-bottom:8px}
 .segments{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-.segments button,.envoyer{font:inherit;color:var(--texte);background:#25292e;border:1px solid var(--ligne);border-radius:10px;padding:10px 4px}
+.onglets{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:#0d0f11;border:1px solid var(--ligne);border-radius:12px;padding:4px;margin-bottom:14px}
+button{font:inherit;color:var(--texte);background:#25292e;border:1px solid var(--ligne);border-radius:10px;padding:10px 4px;cursor:pointer}
+.onglets button{border:0;background:none;padding:9px 4px;font-weight:600;color:var(--doux)}
+.onglets button.actif{background:#2c3036;color:var(--texte)}
 .segments button.actif{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.principal{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;padding:10px 16px}
 .ligne{display:flex;gap:8px}
 input[type=text]{flex:1;min-width:0;font:inherit;color:var(--texte);background:#0d0f11;border:1px solid var(--ligne);border-radius:10px;padding:10px}
-.envoyer{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;padding:10px 16px}
 input[type=range]{width:100%;accent-color:var(--accent)}
 input[type=color]{width:100%;height:44px;border:1px solid var(--ligne);border-radius:10px;background:none;padding:2px}
 select{width:100%;font:inherit;color:var(--texte);background:#0d0f11;border:1px solid var(--ligne);border-radius:10px;padding:10px}
+.espace{margin-top:14px}
 .valeur{float:right;color:var(--texte)}
-.interrupteur{position:relative;width:56px;height:32px;flex:none}
+.interrupteur{position:relative;width:56px;height:32px;flex:none;margin:0}
 .interrupteur input{opacity:0;width:0;height:0}
 .interrupteur span{position:absolute;inset:0;background:#3a3f45;border-radius:32px;transition:.2s}
 .interrupteur span:before{content:"";position:absolute;width:26px;height:26px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
-.interrupteur input:checked+span{background:#34c759}
+.interrupteur input:checked+span{background:var(--ok)}
 .interrupteur input:checked+span:before{transform:translateX(24px)}
 .pastilles{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
-.pastilles button{width:36px;height:36px;border-radius:50%;border:2px solid var(--ligne)}
+.pastilles button{width:36px;height:36px;border-radius:50%;border:2px solid var(--ligne);padding:0}
+.choisir{display:block;text-align:center;border:1px dashed #4a5058;border-radius:10px;padding:16px;color:var(--texte);margin:0}
+.choisir input{display:none}
+.progression{height:6px;background:#0d0f11;border-radius:6px;overflow:hidden;margin-top:10px}
+.progression div{height:100%;width:0;background:var(--accent);transition:width .2s}
+.media{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 10px;align-items:center;padding:10px 0;border-top:1px solid var(--ligne)}
+.media:first-child{border-top:0;padding-top:0}
+.media img,.media .vide{grid-column:1/-1;width:100%;aspect-ratio:4/1;object-fit:cover;image-rendering:pixelated;border-radius:6px;background:#000}
+.media.actif img{outline:2px solid var(--accent);outline-offset:2px}
+.media .nom{font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.media .info{font-size:13px;color:var(--doux);overflow-wrap:anywhere}
+.media .boutons{display:flex;gap:6px}
+.media .boutons button{padding:8px 12px;font-size:15px}
+.erreur{color:#ff6b5b}
 #statut{color:var(--doux);font-size:13px;text-align:center;min-height:18px}
-.cache{display:none}
+.cache{display:none !important}
 </style>
 </head>
 <body>
@@ -44,43 +61,70 @@ select{width:100%;font:inherit;color:var(--texte);background:#0d0f11;border:1px 
     <label class="interrupteur" aria-label="Allumer ou éteindre"><input type="checkbox" id="allume"><span></span></label>
   </h1>
 
-  <div class="carte">
-    <label>Mode</label>
-    <div class="segments" id="modes">
-      <button data-mode="defilant">Défilant</button>
-      <button data-mode="fixe">Fixe</button>
-      <button data-mode="horloge">Horloge</button>
+  <div class="onglets">
+    <button id="onglet-texte" class="actif">Texte</button>
+    <button id="onglet-medias">Médias</button>
+  </div>
+
+  <!-- ===================== onglet Texte ===================== -->
+  <section id="page-texte">
+    <div class="carte">
+      <span class="titre">Mode</span>
+      <div class="segments" id="modes">
+        <button data-mode="defilant">Défilant</button>
+        <button data-mode="fixe">Fixe</button>
+        <button data-mode="horloge">Horloge</button>
+      </div>
     </div>
-  </div>
 
-  <div class="carte" id="bloc-texte">
-    <label for="texte">Texte</label>
-    <form class="ligne" id="form-texte">
-      <input type="text" id="texte" maxlength="200" autocomplete="off" enterkeyhint="send">
-      <button class="envoyer" type="submit">Afficher</button>
-    </form>
-  </div>
+    <div class="carte" id="bloc-texte">
+      <label for="texte">Texte</label>
+      <form class="ligne" id="form-texte">
+        <input type="text" id="texte" maxlength="200" autocomplete="off" enterkeyhint="send">
+        <button class="principal" type="submit">Afficher</button>
+      </form>
+    </div>
 
-  <div class="carte">
-    <label for="couleur">Couleur</label>
-    <input type="color" id="couleur">
-    <div class="pastilles" id="pastilles"></div>
-  </div>
+    <div class="carte">
+      <label for="police">Police</label>
+      <select id="police"></select>
+      <label for="couleur" class="espace">Couleur</label>
+      <input type="color" id="couleur">
+      <div class="pastilles" id="pastilles"></div>
+      <div id="bloc-vitesse">
+        <label for="vitesse" class="espace">Vitesse <span class="valeur" id="v-vitesse"></span></label>
+        <input type="range" id="vitesse" min="5" max="150">
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== onglet Médias ===================== -->
+  <section id="page-medias" class="cache">
+    <div class="carte">
+      <span class="titre">Ajouter une photo, un GIF ou une vidéo</span>
+      <label class="choisir" id="choisir">
+        <input type="file" id="fichier" accept="image/*,video/*">
+        <span id="nom-fichier">Choisir un fichier…</span>
+      </label>
+      <label for="cadrage" class="espace">Cadrage</label>
+      <select id="cadrage">
+        <option value="remplir">Remplir (recadre le centre)</option>
+        <option value="ajuster">Ajuster (bandes noires)</option>
+        <option value="etirer">Étirer (déforme)</option>
+      </select>
+      <button class="principal espace" id="televerser" style="width:100%" disabled>Téléverser</button>
+      <div class="progression cache" id="progression"><div></div></div>
+    </div>
+
+    <div class="carte">
+      <span class="titre">Médias sur la barre</span>
+      <div id="liste-medias"></div>
+    </div>
+  </section>
 
   <div class="carte">
     <label for="luminosite">Luminosité <span class="valeur" id="v-luminosite"></span></label>
     <input type="range" id="luminosite" min="1" max="100">
-    <div id="bloc-vitesse">
-      <label for="vitesse" style="margin-top:14px">Vitesse <span class="valeur" id="v-vitesse"></span></label>
-      <input type="range" id="vitesse" min="5" max="150">
-    </div>
-    <label for="police" style="margin-top:14px">Taille du texte</label>
-    <select id="police">
-      <option value="petite">Petite</option>
-      <option value="moyenne">Moyenne</option>
-      <option value="grande">Grande</option>
-      <option value="geante">Géante</option>
-    </select>
   </div>
 
   <div id="statut"></div>
@@ -88,8 +132,24 @@ select{width:100%;font:inherit;color:var(--texte);background:#0d0f11;border:1px 
 <script>
 const $ = id => document.getElementById(id);
 const statut = $("statut");
+const HORS_LIGNE = "Barre injoignable — vérifie le Wi-Fi";
 let etat = {};
+let medias = [];
 
+/* ---------- onglets ---------- */
+function ouvrir(onglet) {
+  const medias = onglet === "medias";
+  $("onglet-texte").classList.toggle("actif", !medias);
+  $("onglet-medias").classList.toggle("actif", medias);
+  $("page-texte").classList.toggle("cache", medias);
+  $("page-medias").classList.toggle("cache", !medias);
+  try { localStorage.setItem("onglet", onglet); } catch (e) {}
+  if (medias) chargerMedias();
+}
+$("onglet-texte").addEventListener("click", () => ouvrir("texte"));
+$("onglet-medias").addEventListener("click", () => ouvrir("medias"));
+
+/* ---------- état ---------- */
 function afficher(e) {
   etat = e;
   $("allume").checked = e.allume;
@@ -101,6 +161,7 @@ function afficher(e) {
   $("police").value = e.police;
   $("bloc-texte").classList.toggle("cache", e.mode === "horloge");
   $("bloc-vitesse").classList.toggle("cache", e.mode !== "defilant");
+  dessinerMedias();
 }
 
 async function envoyer(changement) {
@@ -110,7 +171,7 @@ async function envoyer(changement) {
     afficher(await r.json());
     statut.textContent = "";
   } catch (err) {
-    statut.textContent = "Barre injoignable — vérifie le Wi-Fi";
+    statut.textContent = HORS_LIGNE;
   }
 }
 
@@ -122,7 +183,10 @@ function envoyerPlusTard(changement) {            // pour les curseurs : évite 
 
 $("allume").addEventListener("change", e => envoyer({allume: e.target.checked}));
 document.querySelectorAll("#modes button").forEach(b => b.addEventListener("click", () => envoyer({mode: b.dataset.mode})));
-$("form-texte").addEventListener("submit", e => { e.preventDefault(); $("texte").blur(); envoyer({texte: $("texte").value}); });
+$("form-texte").addEventListener("submit", e => {
+  e.preventDefault(); $("texte").blur();
+  envoyer({texte: $("texte").value, mode: etat.mode === "media" ? "defilant" : etat.mode});
+});
 $("couleur").addEventListener("input", e => envoyerPlusTard({couleur: e.target.value}));
 $("luminosite").addEventListener("input", e => { $("v-luminosite").textContent = e.target.value + " %"; envoyerPlusTard({luminosite: +e.target.value}); });
 $("vitesse").addEventListener("input", e => { $("v-vitesse").textContent = e.target.value; envoyerPlusTard({vitesse: +e.target.value}); });
@@ -135,8 +199,124 @@ $("police").addEventListener("change", e => envoyer({police: e.target.value}));
   $("pastilles").appendChild(b);
 });
 
-fetch("/api/etat").then(r => r.json()).then(afficher).catch(() => statut.textContent = "Barre injoignable — vérifie le Wi-Fi");
-document.addEventListener("visibilitychange", () => { if (!document.hidden) fetch("/api/etat").then(r => r.json()).then(afficher).catch(() => {}); });
+/* ---------- médias ---------- */
+const STATUTS = {attente: "En attente de conversion…", conversion: "Conversion en cours…", pret: "", erreur: "Erreur"};
+let suivi;
+
+function dessinerMedias() {
+  const liste = $("liste-medias");
+  liste.replaceChildren();
+  if (!medias.length) {
+    const p = document.createElement("div");
+    p.className = "info"; p.textContent = "Aucun média pour l'instant.";
+    liste.appendChild(p);
+    return;
+  }
+  for (const m of medias) {
+    const actif = etat.mode === "media" && etat.media === m.id;
+    const bloc = document.createElement("div");
+    bloc.className = "media" + (actif ? " actif" : "");
+    if (m.statut === "pret") {
+      const img = document.createElement("img");
+      img.src = `/medias/${m.id}/apercu.png?v=${m.n}`; img.alt = "";
+      bloc.appendChild(img);
+    } else if (m.statut !== "erreur") {
+      const vide = document.createElement("div"); vide.className = "vide"; bloc.appendChild(vide);
+    }
+    const texte = document.createElement("div");
+    const nom = document.createElement("div"); nom.className = "nom"; nom.textContent = m.nom;
+    const info = document.createElement("div"); info.className = "info";
+    if (m.statut === "pret") {
+      info.textContent = m.n > 1 ? `Animation · ${(m.n / m.fps).toFixed(1)} s` : "Image fixe";
+      if (actif) info.textContent += " · affiché";
+    } else if (m.statut === "erreur") {
+      info.textContent = "Erreur : " + m.erreur; info.classList.add("erreur");
+    } else {
+      info.textContent = STATUTS[m.statut] || m.statut;
+    }
+    texte.append(nom, info);
+    const boutons = document.createElement("div"); boutons.className = "boutons";
+    if (m.statut === "pret") {
+      const voir = document.createElement("button");
+      voir.className = actif ? "" : "principal"; voir.textContent = actif ? "Affiché" : "Afficher";
+      voir.addEventListener("click", () => envoyer({mode: "media", media: m.id, allume: true}));
+      boutons.appendChild(voir);
+    }
+    const suppr = document.createElement("button");
+    suppr.textContent = "Suppr."; suppr.setAttribute("aria-label", "Supprimer " + m.nom);
+    suppr.addEventListener("click", async () => {
+      if (!confirm(`Supprimer « ${m.nom} » ?`)) return;
+      await fetch(`/api/medias/${m.id}`, {method: "DELETE"}).catch(() => {});
+      chargerEtat(); chargerMedias();
+    });
+    boutons.appendChild(suppr);
+    bloc.append(texte, boutons);
+    liste.appendChild(bloc);
+  }
+}
+
+async function chargerMedias() {
+  try {
+    medias = await (await fetch("/api/medias")).json();
+    dessinerMedias();
+    clearTimeout(suivi);
+    if (medias.some(m => m.statut === "attente" || m.statut === "conversion")) suivi = setTimeout(chargerMedias, 2000);
+  } catch (e) { statut.textContent = HORS_LIGNE; }
+}
+
+$("fichier").addEventListener("change", e => {
+  const f = e.target.files[0];
+  $("nom-fichier").textContent = f ? `${f.name} (${(f.size / 1048576).toFixed(1)} Mo)` : "Choisir un fichier…";
+  $("televerser").disabled = !f;
+});
+
+$("televerser").addEventListener("click", () => {
+  const f = $("fichier").files[0];
+  if (!f) return;
+  const barre = $("progression"), remplissage = barre.firstElementChild;
+  barre.classList.remove("cache"); remplissage.style.width = "0";
+  $("televerser").disabled = true; $("televerser").textContent = "Téléversement…";
+  const xhr = new XMLHttpRequest();
+  xhr.open("POST", `/api/medias?nom=${encodeURIComponent(f.name)}&cadrage=${$("cadrage").value}`);
+  xhr.upload.onprogress = ev => { if (ev.lengthComputable) remplissage.style.width = (100 * ev.loaded / ev.total) + "%"; };
+  xhr.onloadend = () => {
+    barre.classList.add("cache");
+    $("televerser").textContent = "Téléverser";
+    if (xhr.status === 200) {
+      $("fichier").value = ""; $("nom-fichier").textContent = "Choisir un fichier…";
+      statut.textContent = "";
+    } else {
+      $("televerser").disabled = false;
+      let msg = "Échec du téléversement";
+      try { msg = JSON.parse(xhr.responseText).erreur || msg; } catch (e) {}
+      statut.textContent = msg;
+    }
+    chargerMedias();
+  };
+  xhr.send(f);
+});
+
+/* ---------- démarrage ---------- */
+async function chargerEtat() {
+  try { afficher(await (await fetch("/api/etat")).json()); statut.textContent = ""; }
+  catch (e) { statut.textContent = HORS_LIGNE; }
+}
+
+(async () => {
+  try {
+    const polices = await (await fetch("/api/polices")).json();
+    for (const p of polices) {
+      const o = document.createElement("option"); o.value = p.id; o.textContent = p.nom;
+      $("police").appendChild(o);
+    }
+  } catch (e) {}
+  await chargerEtat();
+  let onglet = "texte";
+  try { onglet = localStorage.getItem("onglet") || "texte"; } catch (e) {}
+  ouvrir(onglet);
+  chargerMedias();
+})();
+document.addEventListener("visibilitychange", () => { if (!document.hidden) { chargerEtat(); chargerMedias(); } });
 </script>
 </body>
 </html>

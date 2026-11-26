@@ -1,9 +1,17 @@
 # Barre LED — logiciel
 
 Programme unique (`barre.py`) qui pilote les panneaux et sert une télécommande web
-(`page.html`) pour l'iPhone : allumer/éteindre, mode défilant / fixe / horloge,
-texte, couleur, luminosité, vitesse, taille du texte. Les réglages sont gardés dans
-`etat.json` et retrouvés au redémarrage.
+(`page.html`) pour l'iPhone, en deux onglets :
+
+- **Texte** : défilant / fixe / horloge, texte, couleur, vitesse, choix parmi toutes
+  les polices BDF de la bibliothèque (6 à 24 px) ;
+- **Médias** : photos, GIF animés et vidéos téléversés depuis l'iPhone (500 Mo max,
+  vidéos coupées à 5 min), convertis une fois au format de la barre (cadrage remplir /
+  ajuster / étirer) puis rejoués en boucle. Les médias sont reconvertis automatiquement
+  si la taille de la barre change (passage de 2 à 4 panneaux).
+
+Luminosité et marche/arrêt communs aux deux onglets. Réglages gardés dans `etat.json`,
+médias dans `medias/` : tout est retrouvé au redémarrage.
 
 ## Installation sur le Pi
 
@@ -14,6 +22,9 @@ sudo apt install -y python3-dev cython3 python3-pip cmake ninja-build python3-pi
 cd ~/rpi-rgb-led-matrix
 sudo pip3 install . --break-system-packages
 cd ~ && sudo python3 -c "import rgbmatrix; print('OK')"
+
+# 1 bis. ffmpeg, pour les GIF et les vidéos
+sudo apt install -y ffmpeg
 
 # 2. Copier ce dossier sur le Pi (depuis le Mac) :
 #    scp -r logiciel UTILISATEUR@NOM_DU_PI.local:~/barre-led
