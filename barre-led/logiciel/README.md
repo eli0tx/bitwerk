@@ -8,19 +8,19 @@ texte, couleur, luminosité, vitesse, taille du texte. Les réglages sont gardé
 ## Installation sur le Pi
 
 ```bash
-# 1. Liaison Python de la bibliothèque (une fois)
-sudo apt install -y python3-dev cython3
+# 1. Liaison Python de la bibliothèque (une fois ; 10–20 min sur un Zero 2 W)
+#    Depuis février 2026 la bibliothèque s'installe avec pip (plus de make build-python).
+sudo apt install -y python3-dev cython3 python3-pip cmake ninja-build python3-pil
 cd ~/rpi-rgb-led-matrix
-make build-python
-sudo make install-python
-sudo python3 -c "import rgbmatrix; print('OK')"
+sudo pip3 install . --break-system-packages
+cd ~ && sudo python3 -c "import rgbmatrix; print('OK')"
 
 # 2. Copier ce dossier sur le Pi (depuis le Mac) :
-#    scp -r logiciel UTILISATEUR@barre-led.local:~/barre-led
+#    scp -r logiciel UTILISATEUR@NOM_DU_PI.local:~/barre-led
 
 # 3. Essai
 sudo python3 ~/barre-led/barre.py
-#    iPhone : http://barre-led.local  → Partager → Sur l'écran d'accueil
+#    iPhone : http://NOM_DU_PI.local (ou l'adresse Tailscale) → Partager → Sur l'écran d'accueil
 
 # 4. Démarrage automatique
 sed -i "s/UTILISATEUR/$USER/" ~/barre-led/barre-led.service

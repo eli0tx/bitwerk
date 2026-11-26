@@ -217,8 +217,10 @@ class Requete(BaseHTTPRequestHandler):
 def main():
     charger_etat()
     threading.Thread(target=boucle_affichage, daemon=True).start()
-    print(f"Télécommande : http://barre-led.local:{PORT}" if PORT != 80 else
-          "Télécommande : http://barre-led.local")
+    import socket
+    nom = socket.gethostname().lower()
+    suffixe = "" if PORT == 80 else f":{PORT}"
+    print(f"Télécommande : http://{nom}.local{suffixe}", flush=True)
     ThreadingHTTPServer(("0.0.0.0", PORT), Requete).serve_forever()
 
 
