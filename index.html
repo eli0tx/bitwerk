@@ -108,6 +108,18 @@ nav button.on{color:var(--ink)}nav button.on svg{stroke:var(--red)}
     <div class="warn" id="motoHint" hidden>Le NMAX n'a pas de prise OBD 16 broches : il faut un câble adaptateur Yamaha (prise de diagnostic sous la selle, 3 broches ou 6 broches Euro 5 selon le modèle) vers OBD2 femelle. Contact mis, béquille, moteur à l'arrêt ou au ralenti.</div>
     <button class="pri big" id="btnBle" style="margin-top:12px">Connecter la KW901</button>
     <div class="row" style="margin-top:8px"><button class="ghost" id="btnSim" style="flex:1">Mode démo (sans voiture)</button><button class="ghost" id="btnDisc" style="flex:1" disabled>Déconnecter</button></div>
+    <div class="warn" id="connErr" hidden></div>
+    <details style="margin-top:10px"><summary style="cursor:pointer;min-height:44px;display:flex;align-items:center">Dépannage Bluetooth</summary>
+      <ol class="mute" style="padding-left:20px;margin:6px 0">
+        <li>KW901 branchée, contact mis, bouton de la prise appuyé (voyant allumé).</li>
+        <li>Ne l'associe pas dans Réglages > Bluetooth de l'iPhone ; si elle y figure, touche (i) puis « Oublier cet appareil ».</li>
+        <li>Ferme les autres apps OBD (Car Scanner…) : la prise n'accepte qu'une connexion à la fois.</li>
+        <li>Si elle n'apparaît pas dans la liste de Bluefy, ouvre l'app gratuite nRF Connect : si elle n'y est pas non plus, ta KW901 est un modèle Bluetooth classique (Android/PC seulement).</li>
+        <li>Si elle apparaît dans nRF Connect, note l'UUID du service qui contient une caractéristique « Notify » et une « Write », et saisis-le ci-dessous.</li>
+      </ol>
+      <label for="bleUuid">UUID du service (optionnel)</label>
+      <input id="bleUuid" class="mono" placeholder="ex. 0000fff0-0000-1000-8000-00805f9b34fb" autocomplete="off" spellcheck="false">
+    </details>
     <p class="mute" style="margin:12px 0 0">Branche la KW901, mets le contact, appuie sur son bouton, puis choisis « KONNWEI » ou « OBDII » dans la liste Bluetooth. Pour le codage : contact mis, moteur coupé, idéalement batterie sur chargeur.</p>
   </div>
   <div class="card" id="infoCard" hidden>
@@ -270,25 +282,44 @@ class BaseTransport {
 }
 
 class BleTransport extends BaseTransport {
-  static SERVICES = [0xfff0, 0xffe0, 0x18f0, 0xae30, 0xfee7, 'e7810a71-73ae-499d-8c15-faa9aef0c3f2', '0000ffe5-0000-1000-8000-00805f9b34fb'];
+  static full(u) { return typeof u === 'number' ? '0000' + u.toString(16).padStart(4, '0') + '-0000-1000-8000-00805f9b34fb' : String(u).trim().toLowerCase(); }
+  static SERVICES = [0xfff0, 0xffe0, 0x18f0, 0xae30, 0xfee7, 0xffe5, 0xbeef, 0x1802,
+    'e7810a71-73ae-499d-8c15-faa9aef0c3f2', '6e400001-b5a3-f393-e0a9-e50e24dcca9e', '49535343-fe7d-4ae5-8fa9-9fafd205e455'];
+  constructor(extra) { super(); this.log = () => { }; this.extra = (extra || []).filter(Boolean); }
   async connect() {
     if (!navigator.bluetooth) throw new Error('Web Bluetooth indisponible. Ouvre cette page dans le navigateur Bluefy.');
-    this.device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: BleTransport.SERVICES });
+    const list = [...this.extra, ...BleTransport.SERVICES].map(BleTransport.full);
+    this.log('ble', 'Recherche des appareils…');
+    try { this.device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: list }); }
+    catch (e) { throw new Error(/cancel|NotFound/i.test(e.name + e.message) ? "Aucun appareil choisi. Si la KW901 n'apparaît pas dans la liste, vois le dépannage." : 'Recherche Bluetooth : ' + e.message); }
+    this.name = this.device.name || 'Adaptateur BLE';
+    this.log('ble', 'Appareil choisi : ' + this.name + ' — connexion…');
     this.device.addEventListener('gattserverdisconnected', () => this.onDisconnect && this.onDisconnect());
-    const server = await this.device.gatt.connect();
+    let server;
+    try { server = await this.device.gatt.connect(); }
+    catch (e) { throw new Error("Connexion refusée par l'adaptateur (" + e.message + '). Ferme les autres apps OBD et oublie la KW901 dans Réglages > Bluetooth.'); }
+    this.log('ble', 'Connecté. Recherche du service série…');
     let found = null;
-    for (const uuid of BleTransport.SERVICES) {
-      let svc; try { svc = await server.getPrimaryService(uuid); } catch (e) { continue; }
-      let chars = []; try { chars = await svc.getCharacteristics(); } catch (e) { continue; }
+    const tryService = async (svc) => {
+      let chars = []; try { chars = await svc.getCharacteristics(); } catch (e) { return null; }
+      this.log('ble', 'Service ' + svc.uuid + ' : ' + chars.map(c => c.uuid.slice(4, 8) + '[' + ['read', 'write', 'writeWithoutResponse', 'notify', 'indicate'].filter(p => c.properties[p]).join(',') + ']').join(' '));
       const n = chars.find(c => c.properties.notify || c.properties.indicate);
       const w = chars.find(c => c.properties.write || c.properties.writeWithoutResponse);
-      if (n && w) { found = { n, w, uuid }; break; }
+      return n && w ? { n, w, uuid: svc.uuid } : null;
+    };
+    for (const uuid of list) {
+      let svc; try { svc = await server.getPrimaryService(uuid); } catch (e) { continue; }
+      found = await tryService(svc); if (found) break;
     }
-    if (!found) throw new Error("Service série BLE introuvable sur l'adaptateur.");
+    if (!found) {
+      try { const all = await server.getPrimaryServices(); this.log('ble', 'Services visibles : ' + (all.map(x => x.uuid).join(', ') || 'aucun')); for (const svc of all) { found = await tryService(svc); if (found) break; } }
+      catch (e) { this.log('ble', 'Liste des services impossible : ' + e.message); }
+    }
+    if (!found) throw new Error("Service série introuvable. Relève l'UUID du service avec l'app nRF Connect et saisis-le dans le dépannage.");
     this.rx = found.n; this.tx = found.w; this.useResp = !!found.w.properties.write;
+    this.log('ble', 'Service ' + found.uuid + ' — lecture ' + found.n.uuid.slice(4, 8) + ', écriture ' + found.w.uuid.slice(4, 8) + (this.useResp ? ' (avec réponse)' : ' (sans réponse)'));
     this.rx.addEventListener('characteristicvaluechanged', e => this._onData(new TextDecoder().decode(e.target.value)));
     await this.rx.startNotifications();
-    this.name = this.device.name || 'Adaptateur BLE';
     this.serviceId = String(found.uuid);
   }
   async write(str) {
@@ -300,6 +331,49 @@ class BleTransport extends BaseTransport {
     }
   }
   async disconnect() { try { this.device && this.device.gatt.disconnect(); } catch (e) { } }
+}
+
+// Transport natif (app iPhone compilée avec Capacitor + @capacitor-community/bluetooth-le)
+const isNativeApp = () => !!(typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+class NativeBleTransport extends BaseTransport {
+  static full(u) { return typeof u === 'number' ? '0000' + u.toString(16).padStart(4, '0') + '-0000-1000-8000-00805f9b34fb' : String(u).toLowerCase(); }
+  async connect() {
+    const B = this.B = window.Capacitor.Plugins.BluetoothLe;
+    if (!B) throw new Error('Module Bluetooth natif absent de l\'app');
+    await B.initialize({});
+    const dev = await B.requestDevice({});
+    this.id = dev.deviceId; this.name = dev.name || 'Adaptateur BLE';
+    await B.addListener('disconnected|' + this.id, () => this.onDisconnect && this.onDisconnect());
+    await B.connect({ deviceId: this.id, timeout: 15000 });
+    const res = await B.getServices({ deviceId: this.id });
+    const known = BleTransport.SERVICES.map(BleTransport.full);
+    const rank = s => { const i = known.indexOf(String(s.uuid).toLowerCase()); return i < 0 ? 99 : i; };
+    const services = (res.services || []).slice().sort((a, b) => rank(a) - rank(b));
+    let found = null;
+    for (const s of services) {
+      const cs = s.characteristics || [];
+      const n = cs.find(c => c.properties && (c.properties.notify || c.properties.indicate));
+      const w = cs.find(c => c.properties && (c.properties.write || c.properties.writeWithoutResponse));
+      if (n && w) { found = { s: s.uuid, n, w }; break; }
+    }
+    if (!found) throw new Error("Service série BLE introuvable sur l'adaptateur.");
+    this.svc = found.s; this.nc = found.n.uuid; this.wc = found.w.uuid; this.useResp = !!found.w.properties.write;
+    this.serviceId = this.svc;
+    await B.addListener('notification|' + this.id + '|' + this.svc + '|' + this.nc, r => {
+      const v = r && r.value;
+      const bytes = typeof v === 'string' ? unhex(v) : v && v.buffer ? Array.from(new Uint8Array(v.buffer, v.byteOffset, v.byteLength)) : [];
+      this._onData(String.fromCharCode(...bytes));
+    });
+    await B.startNotifications({ deviceId: this.id, service: this.svc, characteristic: this.nc });
+  }
+  async write(str) {
+    const data = [...str].map(c => c.charCodeAt(0) & 255);
+    for (let i = 0; i < data.length; i += 20) {
+      const p = { deviceId: this.id, service: this.svc, characteristic: this.wc, value: hx(data.slice(i, i + 20), 1).toLowerCase() };
+      await (this.useResp ? this.B.write(p) : this.B.writeWithoutResponse(p));
+    }
+  }
+  async disconnect() { try { await this.B.disconnect({ deviceId: this.id }); } catch (e) { } }
 }
 
 // ---------- Modules VAG (UDS sur CAN 11 bits, via passerelle J533) ----------
@@ -746,7 +820,7 @@ const store = {
 let elm = null, transport = null, scan = store.get('scan', []), busy = false;
 const logLines = [];
 function log(dir, s) {
-  logLines.push((dir === '>' ? '→ ' : '← ') + s);
+  logLines.push((dir === '>' ? '→ ' : dir === '<' ? '← ' : '• ') + s);
   if (logLines.length > 400) logLines.splice(0, logLines.length - 400);
   const el = $('log'); el.textContent = logLines.join('\n'); el.scrollTop = el.scrollHeight;
 }
@@ -781,7 +855,9 @@ $('nav').onclick = e => {
 async function connect(sim) {
   try {
     setStatus('Connexion…', 'busy');
-    transport = sim ? new SimTransport() : new BleTransport();
+    $('connErr').hidden = true;
+    transport = sim ? new SimTransport() : isNativeApp() ? new NativeBleTransport() : new BleTransport([$('bleUuid').value]);
+    transport.log = (d, s) => log('·', s);
     await transport.connect();
     transport.onDisconnect = () => { elm = null; liveStop(); setStatus('Déconnecté'); $('btnDisc').disabled = true; toast('Adaptateur déconnecté'); };
     elm = new ELM(transport, log);
@@ -796,10 +872,12 @@ async function connect(sim) {
     $('btnDisc').disabled = false;
     loadPids();
   } catch (e) {
-    elm = null; setStatus('Déconnecté'); toast(e.message || String(e)); log('!', e.message || String(e));
+    elm = null; setStatus('Déconnecté'); log('!', e.message || String(e)); $('connErr').hidden = false; $('connErr').textContent = e.message || String(e);
   }
 }
 $('btnBle').onclick = () => connect(false);
+$('bleUuid').value = store.get('bleUuid', '');
+$('bleUuid').onchange = () => store.set('bleUuid', $('bleUuid').value.trim());
 $('btnSim').onclick = () => connect(true);
 $('btnDisc').onclick = async () => { liveStop(); await transport?.disconnect(); elm = null; setStatus('Déconnecté'); $('btnDisc').disabled = true; };
 $('btnCopyLog').onclick = () => copy(logLines.join('\n'));
@@ -1077,7 +1155,7 @@ $('btnRaw').onclick = e => guard(e.currentTarget, async () => {
 
 $('profile').value = store.get('profile', 'vag'); $('proto').value = store.get('proto', '0'); applyProfile();
 fillModSelects(); renderScan(); renderBackups(); renderMyRecipes();
-if (!navigator.bluetooth) $('scanMsg').textContent += ' — Bluetooth web indisponible dans ce navigateur : ouvre la page dans Bluefy (mode démo disponible).';
+if (!navigator.bluetooth && !isNativeApp()) $('scanMsg').textContent += ' — Bluetooth web indisponible dans ce navigateur : ouvre la page dans Bluefy (mode démo disponible).';
 }
 
 </script>
