@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Barre LED">
+<meta name="theme-color" content="#111316">
+<title>Barre LED</title>
+<style>
+:root{--bg:#111316;--carte:#1b1e22;--ligne:#2c3036;--texte:#eef0f2;--doux:#9aa3ac;--accent:#ff3c28}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--texte);font:17px/1.4 -apple-system,system-ui,sans-serif;-webkit-text-size-adjust:100%}
+main{max-width:520px;margin:0 auto;padding:calc(16px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom))}
+h1{font-size:26px;margin:4px 0 16px;display:flex;align-items:center;justify-content:space-between}
+.carte{background:var(--carte);border:1px solid var(--ligne);border-radius:14px;padding:14px;margin-bottom:14px}
+label{display:block;color:var(--doux);font-size:14px;margin-bottom:8px}
+.segments{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.segments button,.envoyer{font:inherit;color:var(--texte);background:#25292e;border:1px solid var(--ligne);border-radius:10px;padding:10px 4px}
+.segments button.actif{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.ligne{display:flex;gap:8px}
+input[type=text]{flex:1;min-width:0;font:inherit;color:var(--texte);background:#0d0f11;border:1px solid var(--ligne);border-radius:10px;padding:10px}
+.envoyer{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;padding:10px 16px}
+input[type=range]{width:100%;accent-color:var(--accent)}
+input[type=color]{width:100%;height:44px;border:1px solid var(--ligne);border-radius:10px;background:none;padding:2px}
+select{width:100%;font:inherit;color:var(--texte);background:#0d0f11;border:1px solid var(--ligne);border-radius:10px;padding:10px}
+.valeur{float:right;color:var(--texte)}
+.interrupteur{position:relative;width:56px;height:32px;flex:none}
+.interrupteur input{opacity:0;width:0;height:0}
+.interrupteur span{position:absolute;inset:0;background:#3a3f45;border-radius:32px;transition:.2s}
+.interrupteur span:before{content:"";position:absolute;width:26px;height:26px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
+.interrupteur input:checked+span{background:#34c759}
+.interrupteur input:checked+span:before{transform:translateX(24px)}
+.pastilles{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.pastilles button{width:36px;height:36px;border-radius:50%;border:2px solid var(--ligne)}
+#statut{color:var(--doux);font-size:13px;text-align:center;min-height:18px}
+.cache{display:none}
+</style>
+</head>
+<body>
+<main>
+  <h1>Barre LED
+    <label class="interrupteur" aria-label="Allumer ou éteindre"><input type="checkbox" id="allume"><span></span></label>
+  </h1>
+
+  <div class="carte">
+    <label>Mode</label>
+    <div class="segments" id="modes">
+      <button data-mode="defilant">Défilant</button>
+      <button data-mode="fixe">Fixe</button>
+      <button data-mode="horloge">Horloge</button>
+    </div>
+  </div>
+
+  <div class="carte" id="bloc-texte">
+    <label for="texte">Texte</label>
+    <form class="ligne" id="form-texte">
+      <input type="text" id="texte" maxlength="200" autocomplete="off" enterkeyhint="send">
+      <button class="envoyer" type="submit">Afficher</button>
+    </form>
+  </div>
+
+  <div class="carte">
+    <label for="couleur">Couleur</label>
+    <input type="color" id="couleur">
+    <div class="pastilles" id="pastilles"></div>
+  </div>
+
+  <div class="carte">
+    <label for="luminosite">Luminosité <span class="valeur" id="v-luminosite"></span></label>
+    <input type="range" id="luminosite" min="1" max="100">
+    <div id="bloc-vitesse">
+      <label for="vitesse" style="margin-top:14px">Vitesse <span class="valeur" id="v-vitesse"></span></label>
+      <input type="range" id="vitesse" min="5" max="150">
+    </div>
+    <label for="police" style="margin-top:14px">Taille du texte</label>
+    <select id="police">
+      <option value="petite">Petite</option>
+      <option value="moyenne">Moyenne</option>
+      <option value="grande">Grande</option>
+      <option value="geante">Géante</option>
+    </select>
+  </div>
+
+  <div id="statut"></div>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const statut = $("statut");
+let etat = {};
+
+function afficher(e) {
+  etat = e;
+  $("allume").checked = e.allume;
+  document.querySelectorAll("#modes button").forEach(b => b.classList.toggle("actif", b.dataset.mode === e.mode));
+  if (document.activeElement !== $("texte")) $("texte").value = e.texte;
+  $("couleur").value = e.couleur;
+  $("luminosite").value = e.luminosite; $("v-luminosite").textContent = e.luminosite + " %";
+  $("vitesse").value = e.vitesse; $("v-vitesse").textContent = e.vitesse;
+  $("police").value = e.police;
+  $("bloc-texte").classList.toggle("cache", e.mode === "horloge");
+  $("bloc-vitesse").classList.toggle("cache", e.mode !== "defilant");
+}
+
+async function envoyer(changement) {
+  try {
+    const r = await fetch("/api/etat", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(changement)});
+    if (!r.ok) throw new Error(r.status);
+    afficher(await r.json());
+    statut.textContent = "";
+  } catch (err) {
+    statut.textContent = "Barre injoignable — vérifie le Wi-Fi";
+  }
+}
+
+let minuteur;
+function envoyerPlusTard(changement) {            // pour les curseurs : évite d'inonder le Pi
+  clearTimeout(minuteur);
+  minuteur = setTimeout(() => envoyer(changement), 120);
+}
+
+$("allume").addEventListener("change", e => envoyer({allume: e.target.checked}));
+document.querySelectorAll("#modes button").forEach(b => b.addEventListener("click", () => envoyer({mode: b.dataset.mode})));
+$("form-texte").addEventListener("submit", e => { e.preventDefault(); $("texte").blur(); envoyer({texte: $("texte").value}); });
+$("couleur").addEventListener("input", e => envoyerPlusTard({couleur: e.target.value}));
+$("luminosite").addEventListener("input", e => { $("v-luminosite").textContent = e.target.value + " %"; envoyerPlusTard({luminosite: +e.target.value}); });
+$("vitesse").addEventListener("input", e => { $("v-vitesse").textContent = e.target.value; envoyerPlusTard({vitesse: +e.target.value}); });
+$("police").addEventListener("change", e => envoyer({police: e.target.value}));
+
+["#ff3c28", "#ff9f0a", "#ffd60a", "#30d158", "#0a84ff", "#bf5af2", "#ffffff"].forEach(c => {
+  const b = document.createElement("button");
+  b.style.background = c; b.setAttribute("aria-label", c);
+  b.addEventListener("click", () => envoyer({couleur: c}));
+  $("pastilles").appendChild(b);
+});
+
+fetch("/api/etat").then(r => r.json()).then(afficher).catch(() => statut.textContent = "Barre injoignable — vérifie le Wi-Fi");
+document.addEventListener("visibilitychange", () => { if (!document.hidden) fetch("/api/etat").then(r => r.json()).then(afficher).catch(() => {}); });
+</script>
+</body>
+</html>

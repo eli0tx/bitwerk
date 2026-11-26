@@ -1,0 +1,16 @@
+[Unit]
+Description=Barre LED (affichage + télécommande web)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+# Adapter le chemin si le dossier n'est pas dans /home/<utilisateur>/barre-led
+ExecStart=/usr/bin/python3 /home/UTILISATEUR/barre-led/barre.py
+Environment=BARRE_CHAINE=2
+Environment=BARRE_PARALLELE=1
+Restart=always
+RestartSec=3
+User=root
+
+[Install]
+WantedBy=multi-user.target
