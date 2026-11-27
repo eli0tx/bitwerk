@@ -51,16 +51,17 @@ cle_jeu    = 0.3;
 
 /* ---------- Chariots ---------- */
 plateau_ep = 3;
-jeu_fond   = 0.4;             // jeu entre la lèvre et le fond de gorge
+jeu_fond   = 0.15;            // jeu entre le crochet et le fond de gorge (v2 : 0,4 → 0,15)
 // 4 clips en porte-à-faux par chariot (2 par rail), enracinés côté centre, crochet aux coins
-clip_bras_ep = 2.5;           // épaisseur du bras souple
+clip_bras_ep = 3.0;           // épaisseur du bras souple (v2 : 2,5 → 3, ~1,7× plus raide)
 clip_bras_l  = 26;            // longueur du bras (crochet compris)
 clip_crochet = 6;             // longueur du crochet qui entre dans la gorge
 clip_coin    = 3;             // retrait du crochet par rapport au bout du plateau
 fente      = 4.5;             // débattement derrière le bras (crochet + bossage)
 chanfrein_bande = 2;          // chanfrein d'entrée sous l'arête extérieure du crochet
-jeu_nez    = 0.5;             // jeu entre le plateau rigide et le nez du rebord
-bosse      = 0.8;             // bossage qui tombe dans les crans
+jeu_nez    = 0.15;            // jeu entre les butées rigides et le nez du rebord (v2 : 0,5 → 0,15)
+                              // si le chariot ne rentre pas entre les rails : 0,25 ou 0,3
+bosse      = 0.75;            // cran en V du crochet (même forme que les encoches du rail, 0,8)
 
 /* ---------- Raspberry Pi Zero 2 W ---------- */
 pi_x = 65; pi_y = 30; pi_ex = 58; pi_ey = 23;
@@ -150,9 +151,9 @@ module cle() {
 //    avec un bossage qui tombe dans les crans du rail et une languette de déverrouillage ;
 //  - 2 butées rigides au milieu, contre le nez des rebords : elles reprennent le poids
 //    (barre au mur) pour que les clips ne servent qu'à retenir le chariot.
-y_levre = gorge_dos - jeu_fond;                 // 76,6 : face extérieure du crochet
-y_bord  = levre_y - jeu_nez;                    // 73,5 : bord du corps rigide
-y_bras  = y_bord - clip_bras_ep;                // 71   : face intérieure du bras
+y_levre = gorge_dos - jeu_fond;                 // 76,85 : face extérieure du crochet
+y_bord  = levre_y - jeu_nez;                    // 73,85 : bord du corps rigide
+y_bras  = y_bord - clip_bras_ep;                // 70,85 : face intérieure du bras
 y_corps = y_bras - fente;                       // 66,5 : corps rigide derrière les bras
 
 module clip(l) {                                // clip du coin (+X, +Y)
@@ -164,7 +165,8 @@ module clip(l) {                                // clip du coin (+X, +Y)
     difference() {
         union() {
             translate([x1 - clip_crochet, y_bras, 0]) cube([clip_crochet, y_levre - y_bras, plateau_ep]);
-            translate([x1 - clip_crochet / 2, y_levre - e, 0]) cylinder(r = bosse, h = plateau_ep, $fn = 16);
+            translate([x1 - clip_crochet / 2, y_levre - e, 0]) linear_extrude(plateau_ep)
+                polygon([[-bosse, 0], [bosse, 0], [0, bosse + e]]);
         }
         translate([x1 - clip_crochet - e, y_levre + bosse, 0]) rotate([90, 0, 90])
             linear_extrude(clip_crochet + 2 * e)

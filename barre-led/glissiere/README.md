@@ -39,6 +39,17 @@ Les rails haut et bas sont la même pièce, tournée de 180°, bouts compris (le
 et la 2e clavette du bout restent inutilisés). On peut se contenter des rails
 de jonction et des rails de milieu des panneaux qui portent un chariot.
 
+## Réglage des clips (v2)
+
+Version 2 des chariots (les rails ne changent pas) : jeu latéral ramené de ±0,5 à ±0,15 mm,
+crochet à 0,15 mm du fond de gorge, cran en V de 0,75 mm, bras de 3 mm au lieu de 2,5.
+Le cran reste engagé d'au moins 0,45 mm même chariot décentré (v1 : pouvait ne pas toucher).
+
+Dans `glissiere.scad`, si besoin :
+- le chariot ne rentre pas entre les rails → `jeu_nez` 0,25 ou 0,3 ;
+- les clips sont encore trop souples → `clip_bras_ep` 3,5 ;
+- impossible de clipser → `clip_bras_ep` 2,8 ou `jeu_fond` 0,25.
+
 ## Visserie
 
 - Rails → panneaux : **M3 × 8** (4 + 8 + 4 = 24 vis pour 4 panneaux). Tête logée dans un lamage, accessible
