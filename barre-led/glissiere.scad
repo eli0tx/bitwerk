@@ -17,6 +17,7 @@
 //   chariot_alim      Mean Well LRS-200 vissée par ses 4 taraudages M4 du dessous
 //   chariot_mural     pied à trou de serrure (haut) + colonne d'appui (bas)
 //   chariot_appui     deux colonnes d'appui contre le mur
+//   chariot_mural_fin 66 mm de large, une seule tour à trou de serrure (centrée)
 //   assemblage        aperçu d'une barre de 2 panneaux (ne pas imprimer)
 //
 // Les rails haut et bas sont la MÊME pièce tournée de 180°, bouts compris.
@@ -177,7 +178,7 @@ module clip(l) {                                // clip du coin (+X, +Y)
         polygon([[0, 0], [clip_bras_ep, 0], [clip_bras_ep, 7], [-7, 7]]);
 }
 
-module plateau(largeur, fenetres = []) {
+module plateau(largeur, fenetres = [], butee_l = 12) {
     l = largeur / 2;
     x_racine = l - clip_coin - clip_bras_l;
     difference() {
@@ -193,7 +194,7 @@ module plateau(largeur, fenetres = []) {
         clip(l);
     // butées rigides contre le nez des rebords (reprennent le poids)
     for (sy = [-1, 1]) mirror([0, sy < 0 ? 1 : 0, 0])
-        translate([-6, y_bord - 3, plateau_ep - e]) cube([12, 3, rebord_ep + gorge_h - plateau_ep + 0.4]);
+        translate([-butee_l / 2, y_bord - 3, plateau_ep - e]) cube([butee_l, 3, rebord_ep + gorge_h - plateau_ep + 0.4]);
 }
 
 // --- Pi
@@ -273,6 +274,13 @@ module chariot_mural(serrure = true) {
     colonne(-(pied_y0 + pied_y1) / 2);
 }
 
+// --- Chariot mural fin : 66 mm de large, une seule tour à trou de serrure, centrée en hauteur
+module chariot_mural_fin() {
+    l = clip_coin + clip_bras_l + 4;            // 33 : juste la place des clips et de la butée
+    plateau(2 * l, [[-l + 6, 20, l - 6, y_corps - 5], [-l + 6, -y_corps + 5, l - 6, -20]], 8);
+    translate([0, -(pied_y0 + pied_y1) / 2, 0]) pied_serrure();
+}
+
 // ======================================================================= placement
 L_J = 200; L_M = 120; L_B = (320 - L_M) / 2;
 
@@ -329,3 +337,4 @@ else if (piece == "chariot_pi") chariot_pi();
 else if (piece == "chariot_alim") chariot_alim();
 else if (piece == "chariot_mural") chariot_mural(true);
 else if (piece == "chariot_appui") chariot_mural(false);
+else if (piece == "chariot_mural_fin") chariot_mural_fin();
