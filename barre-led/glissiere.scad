@@ -17,7 +17,7 @@
 //   chariot_alim      Mean Well LRS-200 vissée par ses 4 taraudages M4 du dessous
 //   chariot_mural     pied à trou de serrure (haut) + colonne d'appui (bas)
 //   chariot_appui     deux colonnes d'appui contre le mur
-//   chariot_mural_fin 42 mm de large, une seule tour à trou de serrure, clips d'un seul côté
+//   chariot_mural_fin 42 mm, tour en haut, crochet rigide en haut + 1 clip en bas
 //   assemblage        aperçu d'une barre de 2 panneaux (ne pas imprimer)
 //
 // Les rails haut et bas sont la MÊME pièce tournée de 180°, bouts compris.
@@ -178,24 +178,24 @@ module clip(l) {                                // clip du coin (+X, +Y)
         polygon([[0, 0], [clip_bras_ep, 0], [clip_bras_ep, 7], [-7, 7]]);
 }
 
-module plateau(largeur, fenetres = [], butee_l = 12, cotes = [-1, 1]) {
+module plateau(largeur, fenetres = [], butee_l = 12, cotes = [-1, 1], cotes_y = [-1, 1]) {
     l = largeur / 2;
     x_racine = l - clip_coin - clip_bras_l;
     difference() {
         translate([-l, -y_bord, 0]) cube([largeur, 2 * y_bord, plateau_ep]);
         // logements des clips (ouverts sur le bout du plateau)
-        for (sx = cotes, sy = [-1, 1]) mirror([sx < 0 ? 1 : 0, 0, 0]) mirror([0, sy < 0 ? 1 : 0, 0])
+        for (sx = cotes, sy = cotes_y) mirror([sx < 0 ? 1 : 0, 0, 0]) mirror([0, sy < 0 ? 1 : 0, 0])
             translate([x_racine, y_corps, -e]) cube([l - x_racine + e, y_bord - y_corps + e, plateau_ep + 2 * e]);
         // fenêtres d'allègement / passage de câbles
         for (f = fenetres) translate([0, 0, -e]) linear_extrude(plateau_ep + 2 * e)
             rect_arrondi(f[0], f[1], f[2], f[3], 3);
     }
-    for (sx = cotes, sy = [-1, 1]) mirror([sx < 0 ? 1 : 0, 0, 0]) mirror([0, sy < 0 ? 1 : 0, 0])
+    for (sx = cotes, sy = cotes_y) mirror([sx < 0 ? 1 : 0, 0, 0]) mirror([0, sy < 0 ? 1 : 0, 0])
         clip(l);
     // butées rigides contre le nez des rebords (reprennent le poids) : au milieu,
     // ou au bout sans clip quand les clips ne sont que d'un côté
     xb = len(cotes) == 2 ? -butee_l / 2 : (cotes[0] > 0 ? -l + 3 : l - 3 - butee_l);
-    for (sy = [-1, 1]) mirror([0, sy < 0 ? 1 : 0, 0])
+    for (sy = cotes_y) mirror([0, sy < 0 ? 1 : 0, 0])
         translate([xb, y_bord - 3, plateau_ep - e]) cube([butee_l, 3, rebord_ep + gorge_h - plateau_ep + 0.4]);
 }
 
@@ -276,13 +276,28 @@ module chariot_mural(serrure = true) {
     colonne(-(pied_y0 + pied_y1) / 2);
 }
 
-// --- Chariot mural fin : une seule tour à trou de serrure (centrée en hauteur),
-//     clips d'un seul côté (un par rail), butées rigides à l'autre bout → 42 mm de large
+// --- Chariot mural fin (42 mm de large)
+//  - en haut : crochet RIGIDE sur toute la largeur, engagé sous le rebord du rail du haut ;
+//    c'est lui qui porte tout le poids de la barre (aucun clip en haut) ;
+//  - en bas : un clip souple + une butée rigide, qui verrouillent le chariot et l'empêchent
+//    de pivoter ou de se décrocher ;
+//  - tour à trou de serrure dans la moitié haute.
+//  Pose : engager le crochet du haut dans la gorge (chariot incliné), puis rabattre le bas
+//  jusqu'au clic. Dépose : tirer la languette du bas, soulever le bas, dégager le haut.
+crochet_haut_jeu = 0.3;                         // jeu entre le crochet rigide et le fond de gorge
 module chariot_mural_fin() {
     largeur = clip_coin + clip_bras_l + 13;     // 42 : clip + butée de 8 mm + marges
     l = largeur / 2;
-    plateau(largeur, [[-l + 5, 20, l - 5, y_corps - 5], [-l + 5, -y_corps + 5, l - 5, -20]], 8, [1]);
-    translate([0, -(pied_y0 + pied_y1) / 2, 0]) pied_serrure();
+    y_crochet = gorge_dos - crochet_haut_jeu;   // 76,7
+    plateau(largeur, [[-l + 5, -y_corps + 5, l - 5, -20], [-l + 5, -14, l - 5, 18],
+                      [-l + 5, pied_y1 + 4, l - 5, y_bord - 6]], 8, [1], [-1]);
+    // crochet rigide du haut, chanfrein sur l'arête supérieure pour faciliter l'engagement
+    difference() {
+        translate([-l, y_bord - e, 0]) cube([largeur, y_crochet - y_bord + e, plateau_ep]);
+        translate([-l - e, 0, 0]) rotate([90, 0, 90]) linear_extrude(largeur + 2 * e)
+            polygon([[y_crochet + e, plateau_ep + e], [y_crochet - 0.8, plateau_ep + e], [y_crochet + e, plateau_ep - 0.8]]);
+    }
+    pied_serrure();
 }
 
 // ======================================================================= placement
