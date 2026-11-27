@@ -34,7 +34,7 @@ Source : `../glissiere.scad` (`-D 'piece="…"'`). STL déjà orientés pour l'i
 | `chariot_alim` | Mean Well LRS-200-5 | 1 | 1 |
 | `chariot_mural` | pied à trou de serrure + colonne | 2 | 2 |
 | `chariot_appui` | 2 colonnes d'appui (facultatif, contre la flexion) | 0 | 1–2 |
-| `chariot_mural_fin` | variante du mural, **15 mm de large** (largeur de la tour, 15 cm³) : tour à trou de serrure en haut, crochet rigide à dents en haut (porte tout le poids), petit clip en bas, nervures = butées. Pose : glisser le crochet du haut au fond de la gorge, rabattre le bas jusqu'au clic | au choix | au choix |
+| `chariot_mural_fin` | variante du mural, **15 mm de large** (15 cm³), pied élargi d'un côté en bas : tour à trou de serrure en haut, crochet rigide à dents en haut (porte tout le poids), **clip standard** en bas, sans butée. Pose : glisser le crochet du haut au fond de la gorge, rabattre le bas jusqu'au clic | au choix | au choix |
 
 Les rails haut et bas sont la même pièce, tournée de 180°, bouts compris (le 2e lamage
 et la 2e clavette du bout restent inutilisés). On peut se contenter des rails
