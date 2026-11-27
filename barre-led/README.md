@@ -1,4 +1,10 @@
-# Barre LED 4 × HUB75 — éclisses de jonction
+# Barre LED 4 × HUB75
+
+> **Nouveau système de fixation : voir [`glissiere/`](glissiere/README.md)** (rails modulaires +
+> chariots clipsés). Les éclisses ci-dessous gênaient les connecteurs des panneaux et ne sont
+> plus conseillées.
+
+## Ancien système : éclisses de jonction
 
 4 panneaux P5 64 × 32 px (320 × 160 mm), alignés en paysage : barre de 1280 × 160 mm (256 × 32 px).
 Jonctions à X = −320, 0 et +320 mm (origine au centre de la barre).
