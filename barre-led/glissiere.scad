@@ -11,8 +11,7 @@
 // Pièces (paramètre `piece`) :
 //   rail_jonction     200 mm, à cheval sur une jonction, 2 vis (inserts à ±8 de la jonction)
 //   rail_milieu       120 mm, au milieu d'un panneau, 1 vis (insert du milieu)
-//   rail_bout         100 mm, extrémité de barre, 1 vis (insert de coin)
-//   rail_bout_miroir  idem, pour l'autre côté
+//   rail_bout         100 mm, extrémité de barre, 1 vis (insert de coin) — même pièce aux 4 coins
 //   cle               clavette d'alignement entre deux tronçons
 //   chariot_pi        Raspberry Pi Zero 2 W clipsé (pions + crochets)
 //   chariot_alim      Mean Well LRS-200 vissée par ses 4 taraudages M4 du dessous
@@ -20,8 +19,7 @@
 //   chariot_appui     deux colonnes d'appui contre le mur
 //   assemblage        aperçu d'une barre de 2 panneaux (ne pas imprimer)
 //
-// Les rails haut et bas sont la MÊME pièce tournée de 180° (sauf les bouts : rail_bout
-// sert en haut à gauche et en bas à droite, rail_bout_miroir aux deux autres coins).
+// Les rails haut et bas sont la MÊME pièce tournée de 180°, bouts compris.
 //
 // Rendu (orienté pour l'impression, sans support) :
 //   openscad -D 'piece="rail_jonction"' -o rail_jonction.stl glissiere.scad
@@ -54,10 +52,14 @@ cle_jeu    = 0.3;
 /* ---------- Chariots ---------- */
 plateau_ep = 3;
 jeu_fond   = 0.4;             // jeu entre la lèvre et le fond de gorge
-bande_ep   = 4.5;             // bande souple qui se clipse dans la gorge
-fente      = 4.2;             // fente derrière la bande (débattement du clip + bossage)
-chanfrein_bande = 2;          // chanfrein d'entrée sous l'arête extérieure de la bande
-bande_marge = 8;              // longueur encastrée aux deux bouts de la bande
+// 4 clips en porte-à-faux par chariot (2 par rail), enracinés côté centre, crochet aux coins
+clip_bras_ep = 2.5;           // épaisseur du bras souple
+clip_bras_l  = 26;            // longueur du bras (crochet compris)
+clip_crochet = 6;             // longueur du crochet qui entre dans la gorge
+clip_coin    = 3;             // retrait du crochet par rapport au bout du plateau
+fente      = 4.5;             // débattement derrière le bras (crochet + bossage)
+chanfrein_bande = 2;          // chanfrein d'entrée sous l'arête extérieure du crochet
+jeu_nez    = 0.5;             // jeu entre le plateau rigide et le nez du rebord
 bosse      = 0.8;             // bossage qui tombe dans les crans
 
 /* ---------- Raspberry Pi Zero 2 W ---------- */
@@ -143,46 +145,60 @@ module cle() {
 }
 
 // ======================================================================= chariots
-// Plateau commun : bords souples clipsés dans les deux gorges, avec bossage de cran,
-// chanfrein d'entrée et languette de déverrouillage inclinée à 45°.
-y_levre = gorge_dos - jeu_fond;                 // 76,6 : face extérieure de la bande
-y_fente = y_levre - bande_ep;                   // 73,1
-y_corps = y_fente - fente;                      // 69,9
+// Plateau commun. Le corps rigide s'arrête juste avant le nez des rebords (73,5) :
+//  - 4 clips souples en porte-à-faux (2 par rail) dont le crochet passe sous le rebord,
+//    avec un bossage qui tombe dans les crans du rail et une languette de déverrouillage ;
+//  - 2 butées rigides au milieu, contre le nez des rebords : elles reprennent le poids
+//    (barre au mur) pour que les clips ne servent qu'à retenir le chariot.
+y_levre = gorge_dos - jeu_fond;                 // 76,6 : face extérieure du crochet
+y_bord  = levre_y - jeu_nez;                    // 73,5 : bord du corps rigide
+y_bras  = y_bord - clip_bras_ep;                // 71   : face intérieure du bras
+y_corps = y_bras - fente;                       // 66,5 : corps rigide derrière les bras
+
+module clip(l) {                                // clip du coin (+X, +Y)
+    x1 = l - clip_coin;                         // bout du crochet
+    x0 = x1 - clip_bras_l;                      // racine du bras
+    // bras
+    translate([x0 - e, y_bras, 0]) cube([x1 - x0 + e, clip_bras_ep, plateau_ep]);
+    // crochet avec chanfrein d'entrée par-dessous et bossage de cran
+    difference() {
+        union() {
+            translate([x1 - clip_crochet, y_bras, 0]) cube([clip_crochet, y_levre - y_bras, plateau_ep]);
+            translate([x1 - clip_crochet / 2, y_levre - e, 0]) cylinder(r = bosse, h = plateau_ep, $fn = 16);
+        }
+        translate([x1 - clip_crochet - e, y_levre + bosse, 0]) rotate([90, 0, 90])
+            linear_extrude(clip_crochet + 2 * e)
+                polygon([[e, -e], [-chanfrein_bande - bosse - e, -e], [e, chanfrein_bande + bosse + e]]);
+    }
+    // languette de déverrouillage : face extérieure verticale, face intérieure à 45°
+    translate([x1 - 12, y_bras, plateau_ep - e]) rotate([90, 0, 90]) linear_extrude(10)
+        polygon([[0, 0], [clip_bras_ep, 0], [clip_bras_ep, 7], [-7, 7]]);
+}
 
 module plateau(largeur, fenetres = []) {
     l = largeur / 2;
-    lt = levre_y - 0.3 - y_fente;               // pied de la languette (sous le nez du rebord)
+    x_racine = l - clip_coin - clip_bras_l;
     difference() {
-        union() {
-            translate([-l, -y_levre, 0]) cube([largeur, 2 * y_levre, plateau_ep]);
-            // bossage de cran au milieu de chaque bande
-            for (s = [-1, 1]) translate([0, s * (y_levre - e), 0]) cylinder(r = bosse, h = plateau_ep, $fn = 16);
-        }
-        // fentes derrière les bandes souples
-        for (s = [-1, 1])
-            translate([-l + bande_marge, s > 0 ? y_fente - fente : -y_fente, -e])
-                cube([largeur - 2 * bande_marge, fente, plateau_ep + 2 * e]);
-        // chanfrein d'entrée sous l'arête extérieure (bande + bossage)
-        for (s = [-1, 1]) mirror([0, s < 0 ? 1 : 0, 0])
-            translate([-l - e, y_levre + bosse, 0]) rotate([90, 0, 90])
-                linear_extrude(largeur + 2 * e)
-                    polygon([[e, -e], [-chanfrein_bande - bosse - e, -e], [e, chanfrein_bande + bosse + e]]);
+        translate([-l, -y_bord, 0]) cube([largeur, 2 * y_bord, plateau_ep]);
+        // logements des 4 clips (ouverts sur le bout du plateau)
+        for (sx = [-1, 1], sy = [-1, 1]) mirror([sx < 0 ? 1 : 0, 0, 0]) mirror([0, sy < 0 ? 1 : 0, 0])
+            translate([x_racine, y_corps, -e]) cube([l - x_racine + e, y_bord - y_corps + e, plateau_ep + 2 * e]);
         // fenêtres d'allègement / passage de câbles
         for (f = fenetres) translate([0, 0, -e]) linear_extrude(plateau_ep + 2 * e)
             rect_arrondi(f[0], f[1], f[2], f[3], 3);
     }
-    // languette de déverrouillage : face extérieure verticale (sous le nez du rebord),
-    // face intérieure inclinée à 45° ; on la tire vers le centre pour décliper.
-    for (s = [-1, 1]) mirror([0, s < 0 ? 1 : 0, 0])
-        translate([-6, y_fente, plateau_ep - e]) rotate([90, 0, 90]) linear_extrude(12)
-            polygon([[0, 0], [lt, 0], [lt, 7], [-7, 7]]);
+    for (sx = [-1, 1], sy = [-1, 1]) mirror([sx < 0 ? 1 : 0, 0, 0]) mirror([0, sy < 0 ? 1 : 0, 0])
+        clip(l);
+    // butées rigides contre le nez des rebords (reprennent le poids)
+    for (sy = [-1, 1]) mirror([0, sy < 0 ? 1 : 0, 0])
+        translate([-6, y_bord - 3, plateau_ep - e]) cube([12, 3, rebord_ep + gorge_h - plateau_ep + 0.4]);
 }
 
 // --- Pi
 module chariot_pi() {
     l = 40;
     plateau(2 * l, [[-23.5, -8, 23.5, 8],
-                    [-l + 6, 20, l - 6, y_corps - 4], [-l + 6, -y_corps + 4, l - 6, -20]]);
+                    [-l + 6, 20, l - 6, y_corps - 5], [-l + 6, -y_corps + 5, l - 6, -20]]);
     z = plateau_ep;
     for (sx = [-1, 1], sy = [-1, 1]) translate([sx * pi_ex / 2, sy * pi_ey / 2, z - e]) {
         cylinder(d = plot_d, h = plot_h + e);
@@ -207,9 +223,9 @@ module chariot_alim() {
     l = alim_ex / 2 + 8;
     difference() {
         plateau(2 * l, [for (sx = [-1, 1]) each [
-            [sx > 0 ? 6 : -alim_ex / 2 + 6, alim_ey / 2 + 6, sx > 0 ? alim_ex / 2 - 6 : -6, y_corps - 4],
+            [sx > 0 ? 6 : -alim_ex / 2 + 6, alim_ey / 2 + 6, sx > 0 ? alim_ex / 2 - 6 : -6, y_corps - 5],
             [sx > 0 ? 6 : -alim_ex / 2 + 6, -alim_ey / 2 + 6, sx > 0 ? alim_ex / 2 - 6 : -6, alim_ey / 2 - 6],
-            [sx > 0 ? 6 : -alim_ex / 2 + 6, -y_corps + 4, sx > 0 ? alim_ex / 2 - 6 : -6, -alim_ey / 2 - 6]]]);
+            [sx > 0 ? 6 : -alim_ex / 2 + 6, -y_corps + 5, sx > 0 ? alim_ex / 2 - 6 : -6, -alim_ey / 2 - 6]]]);
         for (sx = [-1, 1], sy = [-1, 1])
             translate([sx * alim_ex / 2, sy * alim_ey / 2, -e]) cylinder(d = m4_d, h = plateau_ep + 2 * e);
     }
@@ -261,8 +277,8 @@ L_J = 200; L_M = 120; L_B = (320 - L_M) / 2;
 module piece_rail(nom) {
     if (nom == "rail_jonction") rail(L_J, [L_J / 2 - 8, L_J / 2 + 8]);
     if (nom == "rail_milieu")   rail(L_M, [L_M / 2]);
-    if (nom == "rail_bout")     rail(L_B, [8], [false, true]);
-    if (nom == "rail_bout_miroir") translate([L_B, 0, 0]) mirror([1, 0, 0]) rail(L_B, [8], [false, true]);
+    // bout symétrique : sert aux 4 coins (le 2e lamage et la 2e clavette restent inutilisés)
+    if (nom == "rail_bout")     rail(L_B, [8, L_B - 8]);
 }
 
 // Rail couché sur sa face extérieure (Y = 80) : gorge ouverte vers le haut.
@@ -282,13 +298,11 @@ module assemblage(n = 2) {
             [[x0, "rail_bout"]],
             [for (i = [0 : n - 1]) [x0 + i * 320 + L_B, "rail_milieu"]],
             [for (i = [1 : n - 1]) [x0 + i * 320 - L_J / 2, "rail_jonction"]],
-            [[x0 + n * 320 - L_B, "rail_bout_miroir"]]);
+            [[x0 + n * 320 - L_B, "rail_bout"]]);
         for (t = troncons) color("SteelBlue") {
             lg = t[1] == "rail_jonction" ? L_J : t[1] == "rail_milieu" ? L_M : L_B;
             if (haut) translate([t[0], 0, 0]) piece_rail(t[1]);
-            else translate([t[0] + lg, 0, 0]) rotate(tourne)
-                piece_rail(t[1] == "rail_bout" ? "rail_bout_miroir" :
-                           t[1] == "rail_bout_miroir" ? "rail_bout" : t[1]);
+            else translate([t[0] + lg, 0, 0]) rotate(tourne) piece_rail(t[1]);
         }
     }
     // chariots
