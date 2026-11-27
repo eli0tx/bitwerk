@@ -17,7 +17,7 @@
 //   chariot_alim      Mean Well LRS-200 vissée par ses 4 taraudages M4 du dessous
 //   chariot_mural     pied à trou de serrure (haut) + colonne d'appui (bas)
 //   chariot_appui     deux colonnes d'appui contre le mur
-//   chariot_mural_fin 42 mm, tour en haut, crochet rigide en haut + 1 clip en bas
+//   chariot_mural_fin 15 mm (largeur de la tour), crochet rigide à dents en haut, butée en bas
 //   assemblage        aperçu d'une barre de 2 panneaux (ne pas imprimer)
 //
 // Les rails haut et bas sont la MÊME pièce tournée de 180°, bouts compris.
@@ -276,27 +276,41 @@ module chariot_mural(serrure = true) {
     colonne(-(pied_y0 + pied_y1) / 2);
 }
 
-// --- Chariot mural fin (42 mm de large)
-//  - en haut : crochet RIGIDE sur toute la largeur, engagé sous le rebord du rail du haut ;
-//    c'est lui qui porte tout le poids de la barre (aucun clip en haut) ;
-//  - en bas : un clip souple + une butée rigide, qui verrouillent le chariot et l'empêchent
-//    de pivoter ou de se décrocher ;
-//  - tour à trou de serrure dans la moitié haute.
-//  Pose : engager le crochet du haut dans la gorge (chariot incliné), puis rabattre le bas
-//  jusqu'au clic. Dépose : tirer la languette du bas, soulever le bas, dégager le haut.
+// --- Chariot mural fin : même largeur que la tour (15 mm), sans clip
+//  - en haut : crochet RIGIDE engagé sous le rebord du rail du haut, avec 2 dents en V qui
+//    tombent dans les crans du fond de gorge (blocage le long du rail, au pas de 10 mm) ;
+//    c'est lui qui porte tout le poids de la barre ;
+//  - en bas : plateau plein + butée rigide contre le nez du rebord du bas, qui empêche le
+//    chariot de descendre et donc le crochet du haut de se dégager ;
+//  - 2 nervures sur toute la longueur pour la raideur ; tour à trou de serrure en haut.
+//  Pose : barre à plat, incliner le chariot, glisser le crochet du haut au fond de la gorge
+//  (dents dans un cran), rabattre le bas. Il tient seul une fois la barre au mur (la barre
+//  pèse sur le crochet) ; à plat, il peut se soulever par le bas : le poser en dernier.
 crochet_haut_jeu = 0.3;                         // jeu entre le crochet rigide et le fond de gorge
+nervure_fin_h = 6;
+nervure_fin_ep = 1.6;
 module chariot_mural_fin() {
-    largeur = clip_coin + clip_bras_l + 13;     // 42 : clip + butée de 8 mm + marges
+    largeur = pied_x;                           // 15 mm
     l = largeur / 2;
     y_crochet = gorge_dos - crochet_haut_jeu;   // 76,7
-    plateau(largeur, [[-l + 5, -y_corps + 5, l - 5, -20], [-l + 5, -14, l - 5, 18],
-                      [-l + 5, pied_y1 + 4, l - 5, y_bord - 6]], 8, [1], [-1]);
-    // crochet rigide du haut, chanfrein sur l'arête supérieure pour faciliter l'engagement
+    hb = rebord_ep + gorge_h + 0.4;             // hauteur des butées au-dessus du plateau
+    // plateau plein, du nez du rebord du bas jusqu'au crochet du haut
     difference() {
-        translate([-l, y_bord - e, 0]) cube([largeur, y_crochet - y_bord + e, plateau_ep]);
+        translate([-l, -y_bord, 0]) cube([largeur, y_bord + y_crochet, plateau_ep]);
+        // chanfrein d'engagement sur l'arête supérieure du crochet
         translate([-l - e, 0, 0]) rotate([90, 0, 90]) linear_extrude(largeur + 2 * e)
             polygon([[y_crochet + e, plateau_ep + e], [y_crochet - 0.8, plateau_ep + e], [y_crochet + e, plateau_ep - 0.8]]);
     }
+    // dents en V dans les crans du fond de gorge (espacées du pas des crans)
+    for (x = [-cran_pas / 2, cran_pas / 2])
+        translate([x, y_crochet - e, 0]) linear_extrude(plateau_ep - 0.8)
+            polygon([[-bosse, 0], [bosse, 0], [0, bosse + e]]);
+    // butée rigide du bas, contre le nez du rebord
+    translate([-l, -y_bord, plateau_ep - e]) cube([largeur, 3, hb]);
+    // nervures longitudinales (s'arrêtent sous le nez du rebord du haut)
+    for (sx = [-1, 1])
+        translate([sx > 0 ? l - nervure_fin_ep : -l, -y_bord, plateau_ep - e])
+            cube([nervure_fin_ep, y_bord + y_bord - 0.2, nervure_fin_h + e]);
     pied_serrure();
 }
 
