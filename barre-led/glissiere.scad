@@ -17,7 +17,7 @@
 //   chariot_alim      Mean Well LRS-200 vissée par ses 4 taraudages M4 du dessous
 //   chariot_mural     pied à trou de serrure (haut) + colonne d'appui (bas)
 //   chariot_appui     deux colonnes d'appui contre le mur
-//   chariot_mural_fin 66 mm de large, une seule tour à trou de serrure (centrée)
+//   chariot_mural_fin 42 mm de large, une seule tour à trou de serrure, clips d'un seul côté
 //   assemblage        aperçu d'une barre de 2 panneaux (ne pas imprimer)
 //
 // Les rails haut et bas sont la MÊME pièce tournée de 180°, bouts compris.
@@ -178,23 +178,25 @@ module clip(l) {                                // clip du coin (+X, +Y)
         polygon([[0, 0], [clip_bras_ep, 0], [clip_bras_ep, 7], [-7, 7]]);
 }
 
-module plateau(largeur, fenetres = [], butee_l = 12) {
+module plateau(largeur, fenetres = [], butee_l = 12, cotes = [-1, 1]) {
     l = largeur / 2;
     x_racine = l - clip_coin - clip_bras_l;
     difference() {
         translate([-l, -y_bord, 0]) cube([largeur, 2 * y_bord, plateau_ep]);
-        // logements des 4 clips (ouverts sur le bout du plateau)
-        for (sx = [-1, 1], sy = [-1, 1]) mirror([sx < 0 ? 1 : 0, 0, 0]) mirror([0, sy < 0 ? 1 : 0, 0])
+        // logements des clips (ouverts sur le bout du plateau)
+        for (sx = cotes, sy = [-1, 1]) mirror([sx < 0 ? 1 : 0, 0, 0]) mirror([0, sy < 0 ? 1 : 0, 0])
             translate([x_racine, y_corps, -e]) cube([l - x_racine + e, y_bord - y_corps + e, plateau_ep + 2 * e]);
         // fenêtres d'allègement / passage de câbles
         for (f = fenetres) translate([0, 0, -e]) linear_extrude(plateau_ep + 2 * e)
             rect_arrondi(f[0], f[1], f[2], f[3], 3);
     }
-    for (sx = [-1, 1], sy = [-1, 1]) mirror([sx < 0 ? 1 : 0, 0, 0]) mirror([0, sy < 0 ? 1 : 0, 0])
+    for (sx = cotes, sy = [-1, 1]) mirror([sx < 0 ? 1 : 0, 0, 0]) mirror([0, sy < 0 ? 1 : 0, 0])
         clip(l);
-    // butées rigides contre le nez des rebords (reprennent le poids)
+    // butées rigides contre le nez des rebords (reprennent le poids) : au milieu,
+    // ou au bout sans clip quand les clips ne sont que d'un côté
+    xb = len(cotes) == 2 ? -butee_l / 2 : (cotes[0] > 0 ? -l + 3 : l - 3 - butee_l);
     for (sy = [-1, 1]) mirror([0, sy < 0 ? 1 : 0, 0])
-        translate([-butee_l / 2, y_bord - 3, plateau_ep - e]) cube([butee_l, 3, rebord_ep + gorge_h - plateau_ep + 0.4]);
+        translate([xb, y_bord - 3, plateau_ep - e]) cube([butee_l, 3, rebord_ep + gorge_h - plateau_ep + 0.4]);
 }
 
 // --- Pi
@@ -274,10 +276,12 @@ module chariot_mural(serrure = true) {
     colonne(-(pied_y0 + pied_y1) / 2);
 }
 
-// --- Chariot mural fin : 66 mm de large, une seule tour à trou de serrure, centrée en hauteur
+// --- Chariot mural fin : une seule tour à trou de serrure (centrée en hauteur),
+//     clips d'un seul côté (un par rail), butées rigides à l'autre bout → 42 mm de large
 module chariot_mural_fin() {
-    l = clip_coin + clip_bras_l + 4;            // 33 : juste la place des clips et de la butée
-    plateau(2 * l, [[-l + 6, 20, l - 6, y_corps - 5], [-l + 6, -y_corps + 5, l - 6, -20]], 8);
+    largeur = clip_coin + clip_bras_l + 13;     // 42 : clip + butée de 8 mm + marges
+    l = largeur / 2;
+    plateau(largeur, [[-l + 5, 20, l - 5, y_corps - 5], [-l + 5, -y_corps + 5, l - 5, -20]], 8, [1]);
     translate([0, -(pied_y0 + pied_y1) / 2, 0]) pied_serrure();
 }
 
